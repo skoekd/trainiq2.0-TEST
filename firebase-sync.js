@@ -2,15 +2,15 @@
 // 100% Free Cloud Sync with Firebase
 // Allows users to sync programs across devices with Google Sign-In
 
-// Firebase configuration - YOU NEED TO REPLACE THESE WITH YOUR OWN VALUES
-// Get these from: https://console.firebase.google.com/
+// Firebase configuration - ACTUAL PRODUCTION CONFIG
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyDU0yGa-XkS7Lwkd_2Au6nFoKaE-U2IHcE",
+    authDomain: "train-test-da86f.firebaseapp.com",
+    projectId: "train-test-da86f",
+    storageBucket: "train-test-da86f.firebasestorage.app",
+    messagingSenderId: "971455659737",
+    appId: "1:971455659737:web:fbc4f68ca157ff7225c8c8",
+    measurementId: "G-K7S9WPL79D"
 };
 
 // Initialize Firebase (only if config is set up)
