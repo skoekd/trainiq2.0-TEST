@@ -3772,41 +3772,47 @@ return sets;
 
     async function pushToCloud() {
         const keys = Object.keys(localStorage);
-        if (keys.length === 0) return alert("No data found on this device.");
+        const pid = window.location.hash; // Capture your iPhone's Profile ID
+        if (keys.length === 0) return alert("No data found to save.");
+        
         try {
             for (let key of keys) {
                 let val = localStorage.getItem(key);
                 let parsed;
-                // Attempt to parse as JSON, otherwise keep as string
                 try { parsed = JSON.parse(val); } catch (e) { parsed = val; }
                 
+                // We save the profile ID along with the data
                 await _supabase.from('user_data').upsert({ 
                     key_name: key, 
-                    Content: parsed 
+                    Content: parsed,
+                    profile_id: pid 
                 }, { onConflict: 'key_name' });
             }
-            alert("✅ iPhone Data Saved! Now go to your PC and hit 'Load'.");
+            alert("✅ iPhone Data Saved! Now go to your PC.");
         } catch (err) { alert("❌ Save Error: " + err.message); }
     }
 
     async function pullFromCloud() {
         try {
             const { data, error } = await _supabase.from('user_data').select('*');
-            if (error) throw error;
-            if (!data || data.length === 0) return alert("Cloud is empty. Save from iPhone first!");
+            if (error || !data) throw error || new Error("No data found");
 
-            // 1. Clear current device memory to prevent conflicts
-            localStorage.clear();
+            // 1. Find the Profile ID from the iPhone data
+            const profileRow = data.find(r => r.profile_id && r.profile_id.includes('#/u/'));
+            
+            if (profileRow) {
+                // 2. Force the computer to use the iPhone's URL identity
+                window.location.hash = profileRow.profile_id;
+            }
 
-            // 2. Inject Cloud Data
+            // 3. Inject all data into localStorage
             data.forEach(row => {
                 const val = (typeof row.Content === 'object') ? JSON.stringify(row.Content) : row.Content;
                 localStorage.setItem(row.key_name, val);
             });
 
-            // 3. Force a 'Hard Refresh' so React sees the new data
-            alert("✅ Data Loaded! The app will now restart with your workouts.");
-            window.location.href = window.location.origin + window.location.pathname + '?reload=' + Date.now();
+            alert("✅ Profile Matched! App reloading...");
+            window.location.reload();
         } catch (err) { alert("❌ Load Error: " + err.message); }
     }
 </script>
