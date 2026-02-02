@@ -236,46 +236,8 @@ function adjustRepRangeForProgram(baseRange, programType, exerciseRole, exercise
 }
 
 // ==================== WEIGHT CALCULATION FIX (MAJOR #2) ====================
-
-const NSCA_REP_PCT = [
-    { reps: 1, pct: 1.00 },
-    { reps: 2, pct: 0.95 },
-    { reps: 3, pct: 0.93 },
-    { reps: 4, pct: 0.90 },
-    { reps: 5, pct: 0.87 },
-    { reps: 6, pct: 0.85 },
-    { reps: 7, pct: 0.83 },
-    { reps: 8, pct: 0.80 },
-    { reps: 9, pct: 0.77 },
-    { reps: 10, pct: 0.75 },
-    { reps: 12, pct: 0.70 }
-];
-
-function percentFromRepsToFailure(repsToFailure) {
-    const r = Math.max(1, Math.round(repsToFailure));
-    
-    // Use NSCA chart for 1-12 reps (validated data)
-    if (r <= 12) {
-        // Linear interpolation between points
-        for (let i = 0; i < NSCA_REP_PCT.length; i++) {
-            if (NSCA_REP_PCT[i].reps === r) {
-                return NSCA_REP_PCT[i].pct;
-            }
-            if (NSCA_REP_PCT[i].reps > r) {
-                const hi = NSCA_REP_PCT[i];
-                const lo = NSCA_REP_PCT[i - 1];
-                const t = (r - lo.reps) / (hi.reps - lo.reps);
-                return lo.pct + t * (hi.pct - lo.pct);
-            }
-        }
-        return 0.70;
-    }
-    
-    // For high rep ranges (13+), use modified curve
-    // Research shows: 15 reps ≈ 60-65% 1RM, 20 reps ≈ 55-60% 1RM
-    const highRepPercentage = Math.max(0.50, 0.70 - (r - 12) * 0.015);
-    return highRepPercentage;
-}
+// NOTE: NSCA_REP_PCT, percentFromRepsToFailure, and roundWeight already exist in index.html
+// We're using those existing functions
 
 function calculateWeight(oneRM, minRep, maxRep, rir) {
     if (!oneRM || oneRM <= 0) return null;
@@ -283,27 +245,12 @@ function calculateWeight(oneRM, minRep, maxRep, rir) {
     const avgRep = (minRep + maxRep) / 2;
     const repsToFailure = avgRep + rir;
     
-    // Use NSCA-based calculation for accuracy
+    // Use existing percentFromRepsToFailure function from index.html
     const percentage = percentFromRepsToFailure(repsToFailure);
     const weight = oneRM * percentage;
     
-    // Round to nearest 2.5 lbs (or 5 lbs for heavier weights)
+    // Use existing roundWeight function from index.html
     return roundWeight(weight);
-}
-
-function roundWeight(w) {
-    const n = parseFloat(w);
-    if (!n || n <= 0) return 0;
-    
-    // Round to nearest 2.5 lbs for weights under 100
-    if (n < 100) {
-        const m = n % 2.5;
-        return m < 1.25 ? Math.floor(n / 2.5) * 2.5 : Math.ceil(n / 2.5) * 2.5;
-    }
-    
-    // Round to nearest 5 lbs for heavier weights
-    const m = n % 5;
-    return m < 2.5 ? Math.floor(n / 5) * 5 : Math.ceil(n / 5) * 5;
 }
 
 // ==================== WARMUP GENERATION (SAFETY #2) ====================
@@ -495,7 +442,6 @@ function canSupersetImproved(exercise1, exercise2, programType) {
 }
 
 // Make functions available globally for browser use
-// (They're already defined above, just need to be accessible)
 if (typeof window !== 'undefined') {
     // Browser environment - attach to window
     window.validateConfig = validateConfig;
@@ -506,13 +452,12 @@ if (typeof window !== 'undefined') {
     window.applyDeload = applyDeload;
     window.adjustRepRangeForProgram = adjustRepRangeForProgram;
     window.calculateWeight = calculateWeight;
-    window.roundWeight = roundWeight;
+    // Note: roundWeight and percentFromRepsToFailure already exist in index.html
     window.generateWarmups = generateWarmups;
     window.validateWeightProgression = validateWeightProgression;
     window.safeLocalStorageSet = safeLocalStorageSet;
     window.safeLocalStorageGet = safeLocalStorageGet;
     window.canSupersetImproved = canSupersetImproved;
-    window.percentFromRepsToFailure = percentFromRepsToFailure;
 }
 
 // Export for Node.js modules (if needed)
@@ -526,12 +471,10 @@ if (typeof module !== 'undefined' && module.exports) {
         applyDeload,
         adjustRepRangeForProgram,
         calculateWeight,
-        roundWeight,
         generateWarmups,
         validateWeightProgression,
         safeLocalStorageSet,
         safeLocalStorageGet,
-        canSupersetImproved,
-        percentFromRepsToFailure
+        canSupersetImproved
     };
 }
