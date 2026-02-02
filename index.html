@@ -3772,10 +3772,8 @@ return sets;
 
     async function pushToCloud() {
         const keys = Object.keys(localStorage);
-        // We capture the current URL (which contains your unique profile ID)
-        const currentProfileUrl = window.location.href;
-        
-        if (keys.length === 0) return alert("No data found to save.");
+        // This captures the EXACT unique ID from your iPhone URL
+        const fullUrl = window.location.href;
         
         try {
             for (let key of keys) {
@@ -3786,39 +3784,36 @@ return sets;
                 await _supabase.from('user_data').upsert({ 
                     key_name: key, 
                     Content: parsed,
-                    // Save the URL so the other device can 'become' this profile
-                    profile_id: currentProfileUrl 
+                    profile_id: fullUrl 
                 }, { onConflict: 'key_name' });
             }
-            alert("✅ iPhone Data Cloud-Synced!");
+            alert("✅ iPhone Data Uploaded!");
         } catch (err) { alert("❌ Save Error: " + err.message); }
     }
 
     async function pullFromCloud() {
         try {
             const { data, error } = await _supabase.from('user_data').select('*');
-            if (error || !data || data.length === 0) throw new Error("Cloud is empty.");
+            if (error || !data || data.length === 0) return alert("Cloud is empty!");
 
-            // 1. CLEAR existing data to prevent ID conflicts
+            // 1. Find the URL that contains the iPhone's secret Profile ID
+            const identityRow = data.find(r => r.profile_id && r.profile_id.includes('#/u/'));
+            
+            if (!identityRow) return alert("Could not find a Profile ID in the cloud.");
+
+            // 2. Clear EVERYTHING out so the app stops looking at the 'New' empty profile
             localStorage.clear();
 
-            // 2. INJECT iPhone data
+            // 3. Force-inject every piece of data from the cloud
             data.forEach(row => {
                 const val = (typeof row.Content === 'object') ? JSON.stringify(row.Content) : row.Content;
                 localStorage.setItem(row.key_name, val);
             });
 
-            // 3. IDENTITY SWAP: Find the iPhone's URL and force this device to use it
-            const identityRow = data.find(r => r.profile_id && r.profile_id.includes('#/u/'));
-            
-            alert("✅ Sync Complete! Redirecting to your iPhone profile...");
-            
-            if (identityRow) {
-                // This forces the computer to load the EXACT same profile as the iPhone
-                window.location.href = identityRow.profile_id;
-            } else {
-                window.location.reload();
-            }
+            // 4. THE MAGIC STEP: Teleport the computer to the iPhone's exact URL
+            alert("✅ DATA SYNCED. Redirecting you to your iPhone profile now...");
+            window.location.href = identityRow.profile_id;
+
         } catch (err) { alert("❌ Load Error: " + err.message); }
     }
 </script>
