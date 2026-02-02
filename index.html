@@ -3765,55 +3765,64 @@ return sets;
     </script>
 </body>
 </html>
-<script>
-    const SB_URL = "https://mujacewgojnbgbtxovkw.supabase.co";
-    const SB_KEY = "sb_publishable_c8Uf9tUD-T4MKldrseZU3Q_u2pZEanO";
-    const _supabase = supabase.createClient(SB_URL, SB_KEY);
+        // Line 3768: Your original React render call
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 
-    async function pushToCloud() {
-        const keys = Object.keys(localStorage);
-        // This captures the EXACT unique ID from your iPhone URL
-        const fullUrl = window.location.href;
-        
-        try {
-            for (let key of keys) {
-                let val = localStorage.getItem(key);
-                let parsed;
-                try { parsed = JSON.parse(val); } catch (e) { parsed = val; }
+    <script>
+        const SB_URL = "https://mujacewgojnbgbtxovkw.supabase.co";
+        const SB_KEY = "sb_publishable_c8Uf9tUD-T4MKldrseZU3Q_u2pZEanO";
+        const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
+        async function pushToCloud() {
+            try {
+                const keys = Object.keys(localStorage);
+                const profileHash = window.location.hash;
+                if (keys.length === 0) return alert("No data found to save.");
+
+                for (let key of keys) {
+                    let val = localStorage.getItem(key);
+                    let parsed;
+                    try { parsed = JSON.parse(val); } catch (e) { parsed = val; }
+                    
+                    await _supabase.from('user_data').upsert({ 
+                        key_name: key, 
+                        Content: parsed,
+                        profile_id: profileHash 
+                    }, { onConflict: 'key_name' });
+                }
+                alert("✅ iPhone Data Saved! Now go to your Computer.");
+            } catch (err) { alert("❌ Save Error: " + err.message); }
+        }
+
+        async function pullFromCloud() {
+            try {
+                const { data, error } = await _supabase.from('user_data').select('*');
+                if (error || !data || data.length === 0) return alert("Cloud is empty!");
+
+                // 1. Clear current device memory entirely
+                localStorage.clear();
+
+                // 2. Inject Cloud Data
+                data.forEach(row => {
+                    const val = (typeof row.Content === 'object') ? JSON.stringify(row.Content) : row.Content;
+                    localStorage.setItem(row.key_name, val);
+                });
+
+                // 3. Force the Identity Swap
+                const identityRow = data.find(r => r.profile_id && r.profile_id.includes('#/u/'));
                 
-                await _supabase.from('user_data').upsert({ 
-                    key_name: key, 
-                    Content: parsed,
-                    profile_id: fullUrl 
-                }, { onConflict: 'key_name' });
-            }
-            alert("✅ iPhone Data Uploaded!");
-        } catch (err) { alert("❌ Save Error: " + err.message); }
-    }
-
-    async function pullFromCloud() {
-        try {
-            const { data, error } = await _supabase.from('user_data').select('*');
-            if (error || !data || data.length === 0) return alert("Cloud is empty!");
-
-            // 1. Find the URL that contains the iPhone's secret Profile ID
-            const identityRow = data.find(r => r.profile_id && r.profile_id.includes('#/u/'));
-            
-            if (!identityRow) return alert("Could not find a Profile ID in the cloud.");
-
-            // 2. Clear EVERYTHING out so the app stops looking at the 'New' empty profile
-            localStorage.clear();
-
-            // 3. Force-inject every piece of data from the cloud
-            data.forEach(row => {
-                const val = (typeof row.Content === 'object') ? JSON.stringify(row.Content) : row.Content;
-                localStorage.setItem(row.key_name, val);
-            });
-
-            // 4. THE MAGIC STEP: Teleport the computer to the iPhone's exact URL
-            alert("✅ DATA SYNCED. Redirecting you to your iPhone profile now...");
-            window.location.href = identityRow.profile_id;
-
-        } catch (err) { alert("❌ Load Error: " + err.message); }
-    }
-</script>
+                if (identityRow) {
+                    alert("✅ Sync Success! Switching to your iPhone Profile...");
+                    window.location.hash = identityRow.profile_id;
+                    // Force a hard reload so the app sees the new data
+                    setTimeout(() => window.location.reload(true), 500);
+                } else {
+                    window.location.reload(true);
+                }
+            } catch (err) { alert("❌ Load Error: " + err.message); }
+        }
+    </script>
+</body>
+</html>
