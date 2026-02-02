@@ -24,9 +24,14 @@ function validateConfig(config) {
         errors.push('Invalid program type.');
     }
     
-    // Validate oneRMs
+    // Validate oneRMs (optional - only validate if user entered values)
     if (config.oneRMs && typeof config.oneRMs === 'object') {
         Object.entries(config.oneRMs).forEach(([muscle, value]) => {
+            // Skip empty values - they're optional
+            if (!value || value === '' || value === '0') {
+                return;
+            }
+            
             const rm = parseFloat(value);
             if (isNaN(rm) || rm <= 0 || rm > 2000) {
                 errors.push(`Invalid 1RM for ${muscle}: ${value}. Must be between 0-2000 lbs.`);
