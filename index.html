@@ -3771,7 +3771,8 @@ return sets;
         root.render(<App />);
     </script>
 
-    <script id="cloud-sync-logic">
+   <script id="supabase-sync-final">
+        // 1. FIX SYNTAX ERROR: Only declare _supabase if it doesn't exist
         if (typeof _supabase === 'undefined') {
             var SB_URL = "https://mujacewgojnbgbtxovkw.supabase.co";
             var SB_KEY = "sb_publishable_c8Uf9tUD-T4MKldrseZU3Q_u2pZEanO";
@@ -3782,7 +3783,7 @@ return sets;
             try {
                 const keys = Object.keys(localStorage);
                 const profileHash = window.location.hash;
-                if (!profileHash) return alert("❌ No Profile ID in URL. Refresh the page.");
+                if (!profileHash || profileHash.length < 5) return alert("❌ No Profile ID found in your URL. Refresh the page.");
 
                 for (let key of keys) {
                     let val = localStorage.getItem(key);
@@ -3795,23 +3796,23 @@ return sets;
                         profile_id: profileHash 
                     }, { onConflict: 'key_name' });
                 }
-                alert("✅ iPhone Data Saved!");
+                alert("✅ TrainIQ Data Saved!");
             } catch (err) { alert("❌ Save Error: " + err.message); }
         }
 
         async function pullFromCloud() {
             try {
-                // THE FILTER: Only grab data starting with 'trainiq'
+                // 2. FILTER OUT OTHER APPS: Only pull keys starting with 'trainiq'
                 const { data, error } = await _supabase
                     .from('user_data')
                     .select('*')
                     .ilike('key_name', 'trainiq%');
 
-                if (error || !data || data.length === 0) throw new Error("No TrainIQ data found");
+                if (error || !data || data.length === 0) return alert("❌ No TrainIQ data found in cloud.");
 
-                // Find the identity row with your iPhone ID
+                // 3. MATCH IPHONE ID: Find the row matching your specific session
                 const identityRow = data.find(r => r.profile_id && r.profile_id.includes('#/u/'));
-                if (!identityRow) return alert("❌ No Profile ID found. Save from phone first!");
+                if (!identityRow) return alert("❌ Profile ID mismatch. Tap 'Save' on iPhone first!");
 
                 localStorage.clear();
                 data.forEach(row => {
@@ -3819,10 +3820,11 @@ return sets;
                     localStorage.setItem(row.key_name, val);
                 });
 
+                // 4. FORCE IDENTITY: Ensure the browser recognizes the phone's profile
                 const rawId = identityRow.profile_id.split('/u/')[1];
                 localStorage.setItem('trainiq-current-profile-id', rawId);
 
-                alert("✅ TrainIQ Data Found! Reloading...");
+                alert("✅ Success! Loading your workouts...");
                 window.location.hash = identityRow.profile_id;
                 window.location.reload(true);
             } catch (err) { alert("❌ Load Error: " + err.message); }
