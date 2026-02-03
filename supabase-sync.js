@@ -1,301 +1,183 @@
 // ==================== SUPABASE CLOUD SYNC ====================
-// 100% Free Cloud Sync with Supabase (No Credit Card Required!)
-// Allows users to sync programs across devices with Google Sign-In
+// Free cloud sync for TrainIQ using Supabase (no credit card required!)
+// 
+// SETUP INSTRUCTIONS:
+// 1. Go to https://supabase.com and create a free account
+// 2. Create a new project (free tier)
+// 3. Get your project URL and anon key from Settings > API
+// 4. Replace the values below:
 
-// Supabase configuration - YOU NEED TO REPLACE THESE WITH YOUR OWN VALUES
-// Get these from: https://supabase.com/dashboard
-const supabaseConfig = {
-    url: "YOUR_SUPABASE_URL_HERE",
-    anonKey: "YOUR_SUPABASE_ANON_KEY_HERE"
-};
+const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';  // e.g., https://xxxxx.supabase.co
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
 
-// Initialize Supabase (only if config is set up)
-let supabaseInitialized = false;
-let supabase = null;
+// Initialize Supabase client
+let supabaseClient = null;
 
-function initializeSupabase() {
-    if (supabaseInitialized) return true;
-    
-    // Check if Supabase is loaded and config is set
-    if (typeof window.supabase === 'undefined') {
-        console.warn('Supabase SDK not loaded');
-        return false;
+try {
+    if (SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE') {
+        const { createClient } = supabase;
+        supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('✅ Supabase connected');
+    } else {
+        console.warn('⚠️  Supabase not configured. Cloud sync will not work.');
+        console.warn('📖 See setup instructions at top of supabase-sync.js');
     }
-    
-    if (supabaseConfig.url === "YOUR_SUPABASE_URL_HERE") {
-        console.warn('Supabase not configured. Cloud sync disabled.');
-        return false;
-    }
-    
-    try {
-        supabase = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
-        supabaseInitialized = true;
-        
-        console.log('✅ Supabase initialized successfully');
-        return true;
-    } catch (error) {
-        console.error('Supabase initialization error:', error);
-        return false;
-    }
+} catch (error) {
+    console.error('❌ Supabase initialization failed:', error);
 }
 
-// ==================== AUTHENTICATION ====================
-
-async function signInWithGoogle() {
-    if (!initializeSupabase()) {
-        alert('Cloud sync is not configured. Please contact support.');
-        return null;
+// Push current data to cloud
+async function pushToCloud() {
+    if (!supabaseClient) {
+        alert('⚠️ Cloud sync not configured.\n\nTo enable:\n1. Create free Supabase account at supabase.com\n2. Get your project URL and key\n3. Update supabase-sync.js with your credentials');
+        return;
     }
-    
+
     try {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: window.location.origin
-            }
-        });
+        // Get profile ID from URL hash (multi-user support)
+        const profileId = getProfileIdFromHash();
         
-        if (error) throw error;
+        // Get current data from localStorage
+        const stateKey = `trainiq:${profileId}:state`;
+        const stateData = localStorage.getItem(stateKey);
         
-        console.log('✅ Signed in with Google');
-        return data;
-    } catch (error) {
-        console.error('Sign-in error:', error);
-        
-        if (error.message.includes('popup')) {
-            return null; // User cancelled
+        if (!stateData) {
+            alert('❌ No data to sync. Generate a program first!');
+            return;
         }
+
+        const state = JSON.parse(stateData);
         
-        alert(`Sign-in failed: ${error.message}`);
-        return null;
-    }
-}
-
-async function signOut() {
-    if (!supabase) return;
-    
-    try {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-        console.log('✅ Signed out');
-    } catch (error) {
-        console.error('Sign-out error:', error);
-    }
-}
-
-function getCurrentUser() {
-    return supabase ? supabase.auth.getUser() : null;
-}
-
-function onAuthStateChanged(callback) {
-    if (!supabase) return () => {};
-    
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-        callback(session?.user || null);
-    });
-    
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        callback(session?.user || null);
-    });
-    
-    return () => subscription.unsubscribe();
-}
-
-// ==================== CLOUD STORAGE ====================
-
-async function saveToCloud(userId, data) {
-    if (!supabase || !userId) {
-        throw new Error('Not authenticated');
-    }
-    
-    try {
-        const { error } = await supabase
-            .from('user_data')
+        // Save to Supabase
+        const { data, error } = await supabaseClient
+            .from('trainiq_data')
             .upsert({
-                user_id: userId,
-                config: data.config || {},
-                program: data.program || null,
-                history: data.history || [],
+                profile_id: profileId,
+                state_data: state,
                 updated_at: new Date().toISOString()
             }, {
-                onConflict: 'user_id'
+                onConflict: 'profile_id'
             });
-        
+
         if (error) throw error;
+
+        alert('✅ Saved to cloud successfully!\n\nYour program is now backed up.');
+        console.log('☁️  Data pushed to cloud:', profileId);
         
-        console.log('✅ Saved to cloud');
-        return { success: true };
     } catch (error) {
-        console.error('Cloud save error:', error);
-        return { success: false, error: error.message };
+        console.error('Push error:', error);
+        alert(`❌ Failed to save to cloud:\n${error.message}\n\nCheck console for details.`);
     }
 }
 
-async function loadFromCloud(userId) {
-    if (!supabase || !userId) {
-        throw new Error('Not authenticated');
+// Pull data from cloud to device
+async function pullFromCloud() {
+    if (!supabaseClient) {
+        alert('⚠️ Cloud sync not configured.\n\nTo enable:\n1. Create free Supabase account at supabase.com\n2. Get your project URL and key\n3. Update supabase-sync.js with your credentials');
+        return;
     }
-    
+
+    if (!confirm('⚠️ This will REPLACE your current data with cloud data.\n\nContinue?')) {
+        return;
+    }
+
     try {
-        const { data, error } = await supabase
-            .from('user_data')
-            .select('*')
-            .eq('user_id', userId)
+        // Get profile ID from URL hash
+        const profileId = getProfileIdFromHash();
+        
+        // Fetch from Supabase
+        const { data, error } = await supabaseClient
+            .from('trainiq_data')
+            .select('state_data, updated_at')
+            .eq('profile_id', profileId)
             .single();
-        
-        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-            throw error;
-        }
-        
-        if (!data) {
-            console.log('No cloud data found');
-            return null;
-        }
-        
-        console.log('✅ Loaded from cloud');
-        
-        return {
-            config: data.config || {},
-            program: data.program || null,
-            history: data.history || [],
-            updatedAt: data.updated_at
-        };
-    } catch (error) {
-        console.error('Cloud load error:', error);
-        throw error;
-    }
-}
 
-async function deleteCloudData(userId) {
-    if (!supabase || !userId) {
-        throw new Error('Not authenticated');
-    }
-    
-    try {
-        const { error } = await supabase
-            .from('user_data')
-            .delete()
-            .eq('user_id', userId);
-        
-        if (error) throw error;
-        
-        console.log('✅ Cloud data deleted');
-        return { success: true };
-    } catch (error) {
-        console.error('Cloud delete error:', error);
-        return { success: false, error: error.message };
-    }
-}
-
-// ==================== SYNC MANAGER ====================
-
-class SyncManager {
-    constructor() {
-        this.syncing = false;
-        this.lastSync = null;
-        this.autoSyncEnabled = true;
-        this.syncInterval = null;
-    }
-    
-    async enableAutoSync(callback) {
-        this.autoSyncEnabled = true;
-        
-        // Auto-sync every 30 seconds when user is active
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-        }
-        
-        this.syncInterval = setInterval(async () => {
-            if (this.autoSyncEnabled && !this.syncing) {
-                const session = await supabase.auth.getSession();
-                if (session?.data?.session?.user) {
-                    await this.syncToCloud(callback);
-                }
+        if (error) {
+            if (error.code === 'PGRST116') {
+                alert('❌ No cloud data found for this profile.\n\nSave to cloud first using the "⬆️ Save to Cloud" button.');
+            } else {
+                throw error;
             }
-        }, 30000); // 30 seconds
-    }
-    
-    disableAutoSync() {
-        this.autoSyncEnabled = false;
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-            this.syncInterval = null;
+            return;
         }
-    }
-    
-    async syncToCloud(getLocalData) {
-        if (this.syncing) return;
-        
-        const session = await supabase.auth.getSession();
-        const user = session?.data?.session?.user;
-        if (!user) return;
-        
-        this.syncing = true;
-        
-        try {
-            const localData = getLocalData();
-            const result = await saveToCloud(user.id, localData);
-            
-            if (result.success) {
-                this.lastSync = new Date();
-            }
-            
-            return result;
-        } catch (error) {
-            console.error('Sync error:', error);
-            return { success: false, error: error.message };
-        } finally {
-            this.syncing = false;
+
+        if (!data || !data.state_data) {
+            alert('❌ No cloud data available.');
+            return;
         }
-    }
-    
-    async syncFromCloud(userId) {
-        if (this.syncing) return null;
+
+        // Save to localStorage
+        const stateKey = `trainiq:${profileId}:state`;
+        localStorage.setItem(stateKey, JSON.stringify(data.state_data));
+
+        const lastUpdated = new Date(data.updated_at).toLocaleString();
+        alert(`✅ Loaded from cloud successfully!\n\nLast updated: ${lastUpdated}\n\nReloading app...`);
         
-        this.syncing = true;
+        // Reload to show new data
+        setTimeout(() => window.location.reload(), 500);
         
-        try {
-            const cloudData = await loadFromCloud(userId);
-            this.lastSync = new Date();
-            return cloudData;
-        } catch (error) {
-            console.error('Sync error:', error);
-            return null;
-        } finally {
-            this.syncing = false;
-        }
-    }
-    
-    getLastSyncTime() {
-        if (!this.lastSync) return null;
-        
-        const now = new Date();
-        const diff = now - this.lastSync;
-        
-        if (diff < 60000) return 'Just now';
-        if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
-        if (diff < 86400000) return `${Math.floor(diff / 3600000)} hr ago`;
-        return this.lastSync.toLocaleDateString();
+    } catch (error) {
+        console.error('Pull error:', error);
+        alert(`❌ Failed to load from cloud:\n${error.message}\n\nCheck console for details.`);
     }
 }
 
-// Global sync manager instance
-window.syncManager = new SyncManager();
-
-// ==================== EXPORT FUNCTIONS ====================
-
-if (typeof window !== 'undefined') {
-    window.supabaseCloudSync = {
-        initialize: initializeSupabase,
-        signInWithGoogle,
-        signOut,
-        getCurrentUser,
-        onAuthStateChanged,
-        saveToCloud,
-        loadFromCloud,
-        deleteCloudData,
-        syncManager: window.syncManager
-    };
+// Helper: Get profile ID from URL hash
+function getProfileIdFromHash() {
+    const hash = window.location.hash;
+    const match = hash.match(/#\/u\/([a-f0-9-]+)/i);
+    if (match) {
+        return match[1];
+    }
+    
+    // If no profile in URL, use default profile
+    const defaultProfileId = localStorage.getItem('trainiq_default_profile_id');
+    if (defaultProfileId) {
+        return defaultProfileId;
+    }
+    
+    // Generate new profile ID
+    const newProfileId = generateUUID();
+    localStorage.setItem('trainiq_default_profile_id', newProfileId);
+    return newProfileId;
 }
+
+// Helper: Generate UUID
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+// Make functions globally available
+window.pushToCloud = pushToCloud;
+window.pullFromCloud = pullFromCloud;
+
+console.log('📦 Supabase sync module loaded');
+
+// ==================== SUPABASE TABLE SETUP ====================
+// Run this SQL in your Supabase SQL Editor to create the table:
+/*
+
+CREATE TABLE trainiq_data (
+    id BIGSERIAL PRIMARY KEY,
+    profile_id TEXT UNIQUE NOT NULL,
+    state_data JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE trainiq_data ENABLE ROW LEVEL SECURITY;
+
+-- Allow anyone to read/write their own profile (using profile_id)
+-- This is simple but not secure for production - consider adding auth
+CREATE POLICY "Allow public access" ON trainiq_data
+    FOR ALL USING (true);
+
+-- Create index for faster lookups
+CREATE INDEX idx_profile_id ON trainiq_data(profile_id);
+
+*/

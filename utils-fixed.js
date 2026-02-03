@@ -19,8 +19,20 @@ function validateConfig(config) {
         errors.push('Days must be between 3-6.');
     }
     
-    // Validate program type
-    if (!['Hypertrophy', 'Strength', 'Powerbuilding', 'Minimalist'].includes(config.programType)) {
+    // Validate program type (including alias variants that map to base types)
+    const validProgramTypes = [
+        'Hypertrophy', 
+        'Strength', 
+        'Powerbuilding', 
+        'Minimalist',
+        'Power / Speed-Strength',  // Maps to Strength
+        'Specialization (Body-Part Focus)',  // Maps to Hypertrophy
+        'German Volume Training (GVT)',  // Maps to Hypertrophy
+        'Density (EDT-style)',  // Maps to Hypertrophy
+        'GPP / Conditioning-Integrated'  // Maps to Hypertrophy
+    ];
+    
+    if (!validProgramTypes.includes(config.programType)) {
         errors.push('Invalid program type.');
     }
     
