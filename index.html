@@ -9,7 +9,6 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { -webkit-tap-highlight-color: transparent; }
@@ -36,17 +35,15 @@
     </style>
 </head>
 <body>
-<div style="background:#111; padding:10px; display:flex; justify-content:center; gap:8px; position:sticky; top:0; z-index:10000; border-bottom:1px solid #444;">
-    <button onclick="pushToCloud()" style="background:#007bff; color:white; border:none; padding:8px 12px; border-radius:8px; font-weight:bold;">⬆️ Save to Cloud</button>
-    <button onclick="pullFromCloud()" style="background:#28a745; color:white; border:none; padding:8px 12px; border-radius:8px; font-weight:bold;">⬇️ Load to Device</button>
-</div>	
     <div id="root"></div>
     <!-- Evidence-based exercise database (used for substitutions) -->
     <script src="exercise-database.js"></script>
     <script src="utils-fixed.js"></script>
-    <!-- Supabase SDK (for Cloud Sync - No Credit Card Required!) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-sync.js"></script>
+    <!-- Firebase SDK (for Cloud Sync) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-sync.js"></script>
     <script type="text/babel">
         const { useState, useEffect } = React;
 
@@ -3529,11 +3526,11 @@ return sets;
                   {!config.syncUser ? (
                     <button
                       onClick={() => {
-                        if (typeof window.supabaseCloudSync === 'undefined') {
+                        if (typeof window.firebaseCloudSync === 'undefined') {
                           alert('Cloud sync is not configured yet. See FIREBASE_SETUP_GUIDE.md for instructions.');
                           return;
                         }
-                        window.supabaseCloudSync.signInWithGoogle();
+                        window.firebaseCloudSync.signInWithGoogle();
                       }}
                       className="w-full p-3 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold btn-touch flex items-center justify-center gap-2 transition"
                     >
@@ -3554,9 +3551,9 @@ return sets;
                       <div className="flex gap-2">
                         <button
                           onClick={() => {
-                            if (typeof window.supabaseCloudSync !== 'undefined' && config.syncUser) {
+                            if (typeof window.firebaseCloudSync !== 'undefined' && config.syncUser) {
                               setConfig(prev => ({ ...prev, syncing: true }));
-                              window.supabaseCloudSync.saveToCloud(config.syncUser.uid, { config, program, history })
+                              window.firebaseCloudSync.saveToCloud(config.syncUser.uid, { config, program, history })
                                 .then(() => {
                                   setConfig(prev => ({ ...prev, lastSync: 'Just now', syncing: false }));
                                   alert('✓ Synced to cloud!');
@@ -3576,8 +3573,8 @@ return sets;
                         <button
                           onClick={() => {
                             if (confirm('Sign out of cloud sync?')) {
-                              if (typeof window.supabaseCloudSync !== 'undefined') {
-                                window.supabaseCloudSync.signOut();
+                              if (typeof window.firebaseCloudSync !== 'undefined') {
+                                window.firebaseCloudSync.signOut();
                                 setConfig(prev => ({ ...prev, syncUser: null, lastSync: null }));
                               }
                             }
@@ -3762,73 +3759,6 @@ return sets;
             document.getElementById('root')
           ); 
         } catch (e) { console.error(e); throw e; }
-    </script>
-</body>
-</html>
-<script>
-// Line 3768: Your original React render call
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-
-   <script id="supabase-sync-final">
-        // 1. FIX SYNTAX ERROR: Only declare _supabase if it doesn't exist
-        if (typeof _supabase === 'undefined') {
-            var SB_URL = "https://mujacewgojnbgbtxovkw.supabase.co";
-            var SB_KEY = "sb_publishable_c8Uf9tUD-T4MKldrseZU3Q_u2pZEanO";
-            var _supabase = supabase.createClient(SB_URL, SB_KEY);
-        }
-
-        async function pushToCloud() {
-            try {
-                const keys = Object.keys(localStorage);
-                const profileHash = window.location.hash;
-                if (!profileHash || profileHash.length < 5) return alert("❌ No Profile ID found in your URL. Refresh the page.");
-
-                for (let key of keys) {
-                    let val = localStorage.getItem(key);
-                    let parsed;
-                    try { parsed = JSON.parse(val); } catch (e) { parsed = val; }
-                    
-                    await _supabase.from('user_data').upsert({ 
-                        key_name: key, 
-                        Content: parsed,
-                        profile_id: profileHash 
-                    }, { onConflict: 'key_name' });
-                }
-                alert("✅ TrainIQ Data Saved!");
-            } catch (err) { alert("❌ Save Error: " + err.message); }
-        }
-
-        async function pullFromCloud() {
-            try {
-                // 2. FILTER OUT OTHER APPS: Only pull keys starting with 'trainiq'
-                const { data, error } = await _supabase
-                    .from('user_data')
-                    .select('*')
-                    .ilike('key_name', 'trainiq%');
-
-                if (error || !data || data.length === 0) return alert("❌ No TrainIQ data found in cloud.");
-
-                // 3. MATCH IPHONE ID: Find the row matching your specific session
-                const identityRow = data.find(r => r.profile_id && r.profile_id.includes('#/u/'));
-                if (!identityRow) return alert("❌ Profile ID mismatch. Tap 'Save' on iPhone first!");
-
-                localStorage.clear();
-                data.forEach(row => {
-                    const val = (typeof row.Content === 'object') ? JSON.stringify(row.Content) : row.Content;
-                    localStorage.setItem(row.key_name, val);
-                });
-
-                // 4. FORCE IDENTITY: Ensure the browser recognizes the phone's profile
-                const rawId = identityRow.profile_id.split('/u/')[1];
-                localStorage.setItem('trainiq-current-profile-id', rawId);
-
-                alert("✅ Success! Loading your workouts...");
-                window.location.hash = identityRow.profile_id;
-                window.location.reload(true);
-            } catch (err) { alert("❌ Load Error: " + err.message); }
-        }
     </script>
 </body>
 </html>

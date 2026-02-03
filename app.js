@@ -1160,9 +1160,56 @@ function generateProgram(config) {
     // Fallback: use the lightweight EXERCISE_DB.
     const SOURCE_DB = (typeof EXERCISE_DATABASE !== 'undefined' && EXERCISE_DATABASE) ? EXERCISE_DATABASE : EXERCISE_DB;
     function getCandidates(poolKey) {
-        const arr = SOURCE_DB[poolKey] || [];
+        const arr = SOURCE_DB[poolKey];
+        
+        // SAFETY GUARD: Prevent crashes from missing/empty pools
+        if (!arr || !Array.isArray(arr) || arr.length === 0) {
+            console.warn(`⚠️  Empty or missing pool: "${poolKey}" - using fallback exercise`);
+            // Return a generic fallback exercise to prevent crashes
+            return [{
+                id: `fallback_${poolKey}`,
+                name: `Generic ${poolKey.replace(/_/g, ' ')} Exercise`,
+                poolKey,
+                type: poolKey.includes('isolation') ? 'isolation' : 'compound',
+                primary: extractMuscleFromPool(poolKey),
+                secondary: [],
+                fatigueNum: 2,
+                skillNum: 2,
+                setupNum: 2,
+                equipment: 'dumbbell',
+                repRange: [8, 12],
+                romBias: 'mid',
+                mainLiftKey: null,
+                isMainLift: false,
+                isMachine: false,
+                stimulusToFatigue: 0.5,
+                substitutionGroup: poolKey
+            }];
+        }
+        
         return arr.map(x => normalizeExercise(x, poolKey)).sort((a, b) => a.id.localeCompare(b.id));
     }
+    
+    // Helper function to extract muscle group from pool key
+    function extractMuscleFromPool(poolKey) {
+        if (poolKey.includes('chest')) return 'chest';
+        if (poolKey.includes('back') && poolKey.includes('vertical')) return 'lats';
+        if (poolKey.includes('back')) return 'back';
+        if (poolKey.includes('shoulders') && poolKey.includes('lateral')) return 'side_delts';
+        if (poolKey.includes('shoulders') && poolKey.includes('rear')) return 'rear_delts';
+        if (poolKey.includes('shoulders')) return 'front_delts';
+        if (poolKey.includes('legs') && poolKey.includes('squat')) return 'quads';
+        if (poolKey.includes('legs') && poolKey.includes('hinge')) return 'hamstrings';
+        if (poolKey.includes('legs') && poolKey.includes('quad')) return 'quads';
+        if (poolKey.includes('legs') && poolKey.includes('hamstring')) return 'hamstrings';
+        if (poolKey.includes('legs') && poolKey.includes('glutes')) return 'glutes';
+        if (poolKey.includes('biceps')) return 'biceps';
+        if (poolKey.includes('triceps')) return 'triceps';
+        if (poolKey.includes('calves')) return 'calves';
+        if (poolKey.includes('core')) return 'core';
+        return 'unknown';
+    }
+
     // -------------------- Split templates --------------------
     // Day pattern “slots” (roles). Slots are satisfied via scoring solver.
     // -------------------- Volume landmarks (MEV→MAV) --------------------
