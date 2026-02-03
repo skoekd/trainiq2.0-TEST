@@ -3801,14 +3801,15 @@ return sets;
 
         async function pullFromCloud() {
             try {
-                // THE FILTER: Only grab keys starting with 'trainiq' to ignore the other app
+                // THE FILTER: Only grab data starting with 'trainiq'
                 const { data, error } = await _supabase
                     .from('user_data')
                     .select('*')
-                    .ilike('key_name', 'trainiq%'); 
+                    .ilike('key_name', 'trainiq%');
 
-                if (error || !data) throw error;
+                if (error || !data || data.length === 0) throw new Error("No TrainIQ data found");
 
+                // Find the identity row with your iPhone ID
                 const identityRow = data.find(r => r.profile_id && r.profile_id.includes('#/u/'));
                 if (!identityRow) return alert("❌ No Profile ID found. Save from phone first!");
 
