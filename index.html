@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -3765,15 +3765,18 @@ return sets;
     </script>
 </body>
 </html>
-        // Line 3768: Your original React render call
+// Line 3768: Your original React render call
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
 
     <script>
-        const SB_URL = "https://mujacewgojnbgbtxovkw.supabase.co";
-        const SB_KEY = "sb_publishable_c8Uf9tUD-T4MKldrseZU3Q_u2pZEanO";
-        const _supabase = supabase.createClient(SB_URL, SB_KEY);
+        // We check if _supabase already exists to prevent the 'already declared' error
+        if (typeof _supabase === 'undefined') {
+            const SB_URL = "https://mujacewgojnbgbtxovkw.supabase.co";
+            const SB_KEY = "sb_publishable_c8Uf9tUD-T4MKldrseZU3Q_u2pZEanO";
+            var _supabase = supabase.createClient(SB_URL, SB_KEY);
+        }
 
         async function pushToCloud() {
             try {
@@ -3792,35 +3795,37 @@ return sets;
                         profile_id: profileHash 
                     }, { onConflict: 'key_name' });
                 }
-                alert("✅ iPhone Data Saved! Now go to your Computer.");
+                alert("✅ iPhone Data Saved!");
             } catch (err) { alert("❌ Save Error: " + err.message); }
         }
 
         async function pullFromCloud() {
             try {
+                // Fetch data from Supabase
                 const { data, error } = await _supabase.from('user_data').select('*');
                 if (error || !data || data.length === 0) return alert("Cloud is empty!");
 
-                // 1. Clear current device memory entirely
-                localStorage.clear();
+                // 1. Find the specific iPhone profile from your table
+                const identityRow = data.find(r => r.profile_id && r.profile_id.includes('#/u/'));
+                if (!identityRow) return alert("❌ No Profile found. Save from phone first!");
 
-                // 2. Inject Cloud Data
+                // 2. Clear old computer data and inject iPhone data
+                localStorage.clear();
                 data.forEach(row => {
                     const val = (typeof row.Content === 'object') ? JSON.stringify(row.Content) : row.Content;
                     localStorage.setItem(row.key_name, val);
                 });
 
-                // 3. Force the Identity Swap
-                const identityRow = data.find(r => r.profile_id && r.profile_id.includes('#/u/'));
+                // 3. Match the ID exactly
+                const rawId = identityRow.profile_id.split('/u/')[1];
+                localStorage.setItem('trainiq-current-profile-id', rawId);
+
+                alert("✅ Sync Success! Reloading...");
                 
-                if (identityRow) {
-                    alert("✅ Sync Success! Switching to your iPhone Profile...");
-                    window.location.hash = identityRow.profile_id;
-                    // Force a hard reload so the app sees the new data
-                    setTimeout(() => window.location.reload(true), 500);
-                } else {
-                    window.location.reload(true);
-                }
+                // 4. Update the URL to match the GitHub pathing
+                window.location.hash = identityRow.profile_id.substring(identityRow.profile_id.indexOf('#'));
+                window.location.reload(true);
+
             } catch (err) { alert("❌ Load Error: " + err.message); }
         }
     </script>
