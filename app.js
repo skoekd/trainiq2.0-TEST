@@ -1,2673 +1,5348 @@
-// @ts-nocheck
-const { useState, useEffect } = React;
-// ==================== EXERCISE DATABASE ====================
-const EXERCISE_DB = {
-    chest_press: [
-        { name: "Barbell Bench Press", primary: "chest", type: "compound", skill: "high", fatigue: "high", repRange: [3, 12] },
-        { name: "Incline Barbell Press", primary: "chest", type: "compound", skill: "high", fatigue: "high", repRange: [5, 12] },
-        { name: "Dumbbell Bench Press", primary: "chest", type: "compound", skill: "medium", fatigue: "high", repRange: [6, 15] },
-        { name: "Incline Dumbbell Press", primary: "chest", type: "compound", skill: "medium", fatigue: "high", repRange: [6, 15] },
-        { name: "Weighted Dips", primary: "chest", type: "compound", skill: "high", fatigue: "high", repRange: [5, 12] },
-        { name: "Machine Chest Press", primary: "chest", type: "compound", skill: "low", fatigue: "medium", repRange: [8, 20] }
-    ],
-    chest_fly: [
-        { name: "Cable Flyes", primary: "chest", type: "isolation", skill: "low", fatigue: "low", repRange: [10, 20] },
-        { name: "Dumbbell Flyes", primary: "chest", type: "isolation", skill: "medium", fatigue: "medium", repRange: [10, 20] },
-        { name: "Pec Deck", primary: "chest", type: "isolation", skill: "low", fatigue: "low", repRange: [12, 25] }
-    ],
-    back_vertical: [
-        { name: "Pull-ups", primary: "lats", type: "compound", skill: "high", fatigue: "high", repRange: [5, 15] },
-        { name: "Weighted Pull-ups", primary: "lats", type: "compound", skill: "high", fatigue: "high", repRange: [3, 10] },
-        { name: "Lat Pulldown", primary: "lats", type: "compound", skill: "low", fatigue: "medium", repRange: [8, 15] },
-        { name: "Wide-Grip Pulldown", primary: "lats", type: "compound", skill: "low", fatigue: "medium", repRange: [8, 15] }
-    ],
-    back_horizontal: [
-        { name: "Barbell Row", primary: "back", type: "compound", skill: "high", fatigue: "high", repRange: [5, 12] },
-        { name: "Pendlay Row", primary: "back", type: "compound", skill: "high", fatigue: "high", repRange: [5, 10] },
-        { name: "T-Bar Row", primary: "back", type: "compound", skill: "medium", fatigue: "high", repRange: [6, 12] },
-        { name: "Dumbbell Row", primary: "back", type: "compound", skill: "medium", fatigue: "medium", repRange: [8, 15] },
-        { name: "Seated Cable Row", primary: "back", type: "compound", skill: "low", fatigue: "medium", repRange: [10, 20] },
-        { name: "Chest-Supported Row", primary: "back", type: "compound", skill: "low", fatigue: "medium", repRange: [8, 15] }
-    ],
-    shoulders_press: [
-        { name: "Overhead Press", primary: "shoulders", type: "compound", skill: "high", fatigue: "high", repRange: [4, 10] },
-        { name: "Seated Dumbbell Press", primary: "shoulders", type: "compound", skill: "medium", fatigue: "high", repRange: [6, 12] },
-        { name: "Arnold Press", primary: "shoulders", type: "compound", skill: "medium", fatigue: "medium", repRange: [8, 15] },
-        { name: "Machine Shoulder Press", primary: "shoulders", type: "compound", skill: "low", fatigue: "medium", repRange: [8, 15] }
-    ],
-    shoulders_lateral: [
-        { name: "Lateral Raise", primary: "shoulders", type: "isolation", skill: "low", fatigue: "low", repRange: [10, 20] },
-        { name: "Cable Lateral Raise", primary: "shoulders", type: "isolation", skill: "low", fatigue: "low", repRange: [12, 25] },
-        { name: "Machine Lateral Raise", primary: "shoulders", type: "isolation", skill: "low", fatigue: "low", repRange: [12, 25] }
-    ],
-    shoulders_rear: [
-        { name: "Face Pull", primary: "rear_delts", type: "isolation", skill: "low", fatigue: "low", repRange: [12, 20] },
-        { name: "Reverse Pec Deck", primary: "rear_delts", type: "isolation", skill: "low", fatigue: "low", repRange: [12, 20] },
-        { name: "Bent-Over Fly", primary: "rear_delts", type: "isolation", skill: "medium", fatigue: "low", repRange: [12, 20] }
-    ],
-    legs_squat: [
-        { name: "Back Squat", primary: "quads", type: "compound", skill: "high", fatigue: "very_high", repRange: [3, 10] },
-        { name: "Front Squat", primary: "quads", type: "compound", skill: "high", fatigue: "high", repRange: [5, 10] },
-        { name: "Bulgarian Split Squat", primary: "quads", type: "compound", skill: "medium", fatigue: "high", repRange: [8, 15] },
-        { name: "Leg Press", primary: "quads", type: "compound", skill: "low", fatigue: "high", repRange: [8, 20] },
-        { name: "Hack Squat", primary: "quads", type: "compound", skill: "low", fatigue: "high", repRange: [8, 15] }
-    ],
-    legs_hinge: [
-        { name: "Conventional Deadlift", primary: "hamstrings", type: "compound", skill: "high", fatigue: "very_high", repRange: [3, 8] },
-        { name: "Romanian Deadlift", primary: "hamstrings", type: "compound", skill: "high", fatigue: "high", repRange: [6, 12] },
-        { name: "Sumo Deadlift", primary: "hamstrings", type: "compound", skill: "high", fatigue: "very_high", repRange: [3, 8] },
-        { name: "Trap Bar Deadlift", primary: "hamstrings", type: "compound", skill: "medium", fatigue: "very_high", repRange: [5, 10] },
-        { name: "Dumbbell RDL", primary: "hamstrings", type: "compound", skill: "medium", fatigue: "medium", repRange: [8, 15] }
-    ],
-    legs_isolation: [
-        { name: "Leg Extension", primary: "quads", type: "isolation", skill: "low", fatigue: "low", repRange: [10, 20] },
-        { name: "Leg Curl", primary: "hamstrings", type: "isolation", skill: "low", fatigue: "low", repRange: [10, 20] },
-        { name: "Seated Leg Curl", primary: "hamstrings", type: "isolation", skill: "low", fatigue: "low", repRange: [10, 20] }
-    ],
-    legs_glutes: [
-        { name: "Hip Thrust", primary: "glutes", type: "compound", skill: "medium", fatigue: "medium", repRange: [8, 15] },
-        { name: "Glute Bridge", primary: "glutes", type: "compound", skill: "low", fatigue: "medium", repRange: [10, 20] }
-    ],
-    legs_calves: [
-        { name: "Standing Calf Raise", primary: "calves", type: "isolation", skill: "low", fatigue: "low", repRange: [10, 20] },
-        { name: "Seated Calf Raise", primary: "calves", type: "isolation", skill: "low", fatigue: "low", repRange: [12, 25] }
-    ],
-    arms_biceps: [
-        { name: "Barbell Curl", primary: "biceps", type: "isolation", skill: "low", fatigue: "low", repRange: [8, 15] },
-        { name: "Dumbbell Curl", primary: "biceps", type: "isolation", skill: "low", fatigue: "low", repRange: [8, 15] },
-        { name: "Hammer Curl", primary: "biceps", type: "isolation", skill: "low", fatigue: "low", repRange: [10, 15] },
-        { name: "Cable Curl", primary: "biceps", type: "isolation", skill: "low", fatigue: "low", repRange: [10, 20] },
-        { name: "Preacher Curl", primary: "biceps", type: "isolation", skill: "low", fatigue: "low", repRange: [10, 15] }
-    ],
-    arms_triceps: [
-        { name: "Close-Grip Bench", primary: "triceps", type: "compound", skill: "medium", fatigue: "medium", repRange: [6, 12] },
-        { name: "Overhead Extension", primary: "triceps", type: "isolation", skill: "low", fatigue: "low", repRange: [10, 15] },
-        { name: "Tricep Pushdown", primary: "triceps", type: "isolation", skill: "low", fatigue: "low", repRange: [10, 20] },
-        { name: "Rope Pushdown", primary: "triceps", type: "isolation", skill: "low", fatigue: "low", repRange: [12, 20] },
-        { name: "Skull Crusher", primary: "triceps", type: "isolation", skill: "medium", fatigue: "medium", repRange: [8, 12] }
-    ]
-};
-// ==================== EXERCISE TAG SCHEMA (for substitutions) ====================
-// We keep the generator database (EXERCISE_DB) lightweight, but use the more
-// comprehensive EXERCISE_DATABASE (loaded from exercise-database.js) for swaps.
-//
-// Canonical tag schema for matching "similar stimulus" alternatives:
-// {
-//   id: string,
-//   name: string,
-//   pattern: 'horizontal_push'|'vertical_push'|'horizontal_pull'|'vertical_pull'|'squat'|'hinge'|
-//            'knee_extension'|'knee_flexion'|'hip_extension'|'hip_abduction'|
-//            'elbow_flexion'|'elbow_extension'|'shoulder_abduction'|'shoulder_external_rotation'|
-//            'calf_raise'|'core',
-//   primeMover: string,                 // e.g., 'chest', 'quads'
-//   secondary: string[],                 // e.g., ['triceps','front_delts']
-//   type: 'compound'|'isolation',
-//   equipment: 'barbell'|'dumbbell'|'machine'|'cable'|'bodyweight'|'smith'|'bands'|'other',
-//   stabilityDemand: 'low'|'medium'|'high',   // how much stabilization the lifter must provide
-//   skill: 'low'|'medium'|'high',
-//   fatigue: 'low'|'medium'|'high'|'very_high',
-//   repRange: [number, number],
-//   progression: 'linear'|'weighted'|'reps'|'double_progression'|'other'
-// }
-const PATTERN_FROM_CATEGORY = (cat) => {
-    if (!cat)
-        return 'other';
-    if (cat.startsWith('chest_'))
-        return 'horizontal_push';
-    if (cat.startsWith('back_vertical'))
-        return 'vertical_pull';
-    if (cat.startsWith('back_horizontal'))
-        return 'horizontal_pull';
-    if (cat.startsWith('shoulders_press'))
-        return 'vertical_push';
-    if (cat.startsWith('shoulders_lateral'))
-        return 'shoulder_abduction';
-    if (cat.startsWith('shoulders_rear'))
-        return 'shoulder_external_rotation';
-    if (cat.startsWith('legs_squat'))
-        return 'squat';
-    if (cat.startsWith('legs_hinge'))
-        return 'hinge';
-    if (cat.startsWith('legs_isolation'))
-        return 'knee_extension';
-    if (cat.startsWith('legs_glutes'))
-        return 'hip_extension';
-    if (cat.startsWith('legs_calves'))
-        return 'calf_raise';
-    if (cat.startsWith('arms_biceps'))
-        return 'elbow_flexion';
-    if (cat.startsWith('arms_triceps'))
-        return 'elbow_extension';
-    return 'other';
-};
-const stabilityDemandFromEquipment = (eq) => {
-    // "stabilityDemand" reflects how much stabilization the lifter must provide.
-    if (eq === 'machine')
-        return 'low';
-    if (eq === 'cable')
-        return 'medium';
-    if (eq === 'smith')
-        return 'low';
-    if (eq === 'dumbbell')
-        return 'high';
-    if (eq === 'barbell')
-        return 'high';
-    if (eq === 'bodyweight')
-        return 'high';
-    return 'medium';
-};
-const normalize = (s) => String(s || '').trim().toLowerCase();
-const buildExerciseIndex = () => {
-    const idx = new Map();
-    try {
-        if (typeof EXERCISE_DATABASE !== 'object')
-            return idx;
-        Object.entries(EXERCISE_DATABASE).forEach(([category, arr]) => {
-            (arr || []).forEach((ex, i) => {
-                const name = ex === null || ex === void 0 ? void 0 : ex.name;
-                if (!name)
-                    return;
-                idx.set(normalize(name), {
-                    id: `${category}:${i}`,
-                    name,
-                    category,
-                    pattern: PATTERN_FROM_CATEGORY(category),
-                    primeMover: ex.primary,
-                    secondary: ex.secondary || [],
-                    type: ex.type,
-                    equipment: ex.equipment || 'other',
-                    stabilityDemand: stabilityDemandFromEquipment(ex.equipment),
-                    skill: ex.skill || 'medium',
-                    fatigue: ex.fatigue || 'medium',
-                    repRange: ex.repRange || [8, 12],
-                    progression: ex.progression || 'other'
-                });
-            });
-        });
-    }
-    catch (e) {
-        // fail silently; substitutions just won't show.
-    }
-    return idx;
-};
-const EXERCISE_INDEX = buildExerciseIndex();
-const getExerciseTags = (name) => EXERCISE_INDEX.get(normalize(name)) || null;
-const overlapScore = (a, b) => {
-    // Measures rep-range overlap (0..1)
-    if (!a || !b)
-        return 0;
-    const [a1, a2] = a;
-    const [b1, b2] = b;
-    const lo = Math.max(a1, b1);
-    const hi = Math.min(a2, b2);
-    if (hi < lo)
-        return 0;
-    const inter = hi - lo;
-    const span = Math.max(a2 - a1, b2 - b1, 1);
-    return Math.min(1, inter / span);
-};
-const rankAlternatives = (origTags, candidates) => {
-    const fatigueRank = { low: 0, medium: 1, high: 2, very_high: 3 };
-    const skillRank = { low: 0, medium: 1, high: 2 };
-    const stabRank = { low: 0, medium: 1, high: 2 };
-    const score = (c) => {
-        var _a, _b, _c, _d, _e, _f;
-        let s = 0;
-        // Hard matches are filtered already; scoring is for ordering.
-        if (c.equipment === origTags.equipment)
-            s += 2;
-        s += Math.max(0, 1 - Math.abs(((_a = stabRank[c.stabilityDemand]) !== null && _a !== void 0 ? _a : 1) - ((_b = stabRank[origTags.stabilityDemand]) !== null && _b !== void 0 ? _b : 1)) * 0.5);
-        s += Math.max(0, 1 - Math.abs(((_c = skillRank[c.skill]) !== null && _c !== void 0 ? _c : 1) - ((_d = skillRank[origTags.skill]) !== null && _d !== void 0 ? _d : 1)) * 0.5);
-        s += Math.max(0, 1 - Math.abs(((_e = fatigueRank[c.fatigue]) !== null && _e !== void 0 ? _e : 1) - ((_f = fatigueRank[origTags.fatigue]) !== null && _f !== void 0 ? _f : 1)) * 0.35);
-        s += overlapScore(c.repRange, origTags.repRange);
-        return s;
-    };
-    return candidates
-        .map(c => ({ ...c, _score: score(c) }))
-        .sort((a, b) => b._score - a._score)
-        .slice(0, 6);
-};
-const getAlternativesForExercise = (exerciseName, { role = 'accessory' } = {}) => {
-    const orig = getExerciseTags(exerciseName);
-    if (!orig)
-        return [];
-    // Evidence-based constraints: preserve stimulus
-    // - same movement pattern
-    // - same prime mover
-    // - same type (compound vs isolation)
-    // - (optional) keep equipment close via ranking
-    const pool = Array.from(EXERCISE_INDEX.values());
-    const strict = pool.filter(c => c.name !== orig.name &&
-        c.pattern === orig.pattern &&
-        c.primeMover === orig.primeMover &&
-        c.type === orig.type);
-    // Main lift substitutions should be conservative; require same equipment if possible.
-    const conservative = (role === 'main' || role === 'secondary');
-    const preferred = conservative
-        ? strict.filter(c => c.equipment === orig.equipment)
-        : strict;
-    const candidates = preferred.length >= 3 ? preferred : strict;
-    return rankAlternatives(orig, candidates);
-};
-// ==================== EVIDENCE-BASED CALCULATIONS ====================
-// ==================== SUPERSET LOGIC ====================
-// Supersets are intended ONLY for non-main lifts (accessories).
-// This function tags exercises with superset metadata; if the UI
-// ignores it, nothing breaks.
-function applySupersets(exercises, programType) {
-    if (!Array.isArray(exercises) || exercises.length < 3)
-        return exercises;
-    // Determine how many "main" movements to protect from supersets.
-    const mainLiftCount = programType === 'Strength' ? 2 : 1;
-    // Eligible = non-main exercises. For Strength, only isolation work.
-    const eligibleIdx = [];
-    for (let i = mainLiftCount; i < exercises.length; i++) {
-        const ex = exercises[i];
-        if (!ex)
-            continue;
-        if (programType === 'Strength') {
-            if (ex.type === 'isolation')
-                eligibleIdx.push(i);
-            continue;
-        }
-        // For non-strength: prefer higher-rep / lower-skill accessories
-        // (keeps heavy compounds from being paired).
-        const minRep = Array.isArray(ex.reps) ? ex.reps[0] : 0;
-        if (ex.type === 'isolation' || minRep >= 8)
-            eligibleIdx.push(i);
-    }
-    // Pair eligible exercises into A1/A2, B1/B2, etc. — with gym-realistic constraints.
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let group = 0;
-    // Logistics rules (commercial gym):
-    // - If a barbell lift is involved, the partner MUST be portable (bodyweight/DB/band/kettlebell).
-    // - No-rest (0–30s) supersets should avoid “walk-away” machine swaps.
-    const PORTABLE_EQUIPMENT = new Set(['bodyweight', 'dumbbell', 'kettlebell', 'band', 'resistance band']);
-    const eq = (ex) => ((ex === null || ex === void 0 ? void 0 : ex.equipment) || '').toString().toLowerCase();
-    const isPortable = (ex) => PORTABLE_EQUIPMENT.has(eq(ex));
-    const isBarbell = (ex) => eq(ex) === 'barbell';
-    function canSuperset(a, b) {
-        if (!a || !b)
-            return false;
-        const ea = eq(a);
-        const eb = eq(b);
-        // Barbell rule: barbell + portable only (prevents Pendlay Row → Reverse Pec Deck).
-        if (ea === 'barbell' || eb === 'barbell') {
-            if (ea === 'barbell' && eb === 'barbell')
-                return false;
-            const partner = ea === 'barbell' ? b : a;
-            return isPortable(partner);
-        }
-        // Otherwise allow; these are already filtered to accessories/isolation or higher-rep work.
-        return true;
-    }
-    const used = new Set();
-    for (let j = 0; j < eligibleIdx.length; j++) {
-        const i1 = eligibleIdx[j];
-        if (used.has(i1))
-            continue;
-        // Find the next compatible partner for i1.
-        let i2 = null;
-        for (let k = j + 1; k < eligibleIdx.length; k++) {
-            const cand = eligibleIdx[k];
-            if (used.has(cand))
-                continue;
-            if (canSuperset(exercises[i1], exercises[cand])) {
-                i2 = cand;
-                break;
-            }
-        }
-        if (i2 == null)
-            continue;
-        const g = letters[group] || `G${group + 1}`;
-        // Clear, user-facing superset instructions + metadata for the UI.
-        const postRest = exercises[i1].rest || '60-120s';
-        const betweenRest = '0-30s';
-        exercises[i1].superset = { group: g, position: 1, partner: exercises[i2].name, betweenRest, postRest };
-        exercises[i2].superset = { group: g, position: 2, partner: exercises[i1].name, betweenRest, postRest };
-        // Keep the inline rest label short and readable.
-        const restLabel = `Superset: ${betweenRest} between • ${postRest} after pair`;
-        exercises[i1].rest = restLabel;
-        exercises[i2].rest = restLabel;
-        used.add(i1);
-        used.add(i2);
-        group += 1;
-    }
-    return exercises;
-}
-function roundWeight(w) {
-    const n = parseFloat(w);
-    if (!n)
-        return 0;
-    if (n < 100) {
-        const m = n % 2.5;
-        return m < 1.25 ? Math.floor(n / 2.5) * 2.5 : Math.ceil(n / 2.5) * 2.5;
-    }
-    const m = n % 5;
-    return m < 2.5 ? Math.floor(n / 5) * 5 : Math.ceil(n / 5) * 5;
-}
-function calc1RMWeight(oneRM, minRep, maxRep, rir) {
-    // Legacy: reverse-Epley estimate based on reps + RIR (works fine for accessories/isolation).
-    if (!oneRM)
-        return null;
-    const avgRep = (minRep + maxRep) / 2;
-    const targetRepsToFailure = avgRep + rir;
-    const percentage = 1.0278 - (0.0278 * targetRepsToFailure);
-    return roundWeight(oneRM * percentage);
-}
-// NSCA Training Load Chart (Landers, adapted by NSCA): %1RM by reps-to-failure.
-// Source: NSCA Training Load Chart PDF.
-const NSCA_REP_PCT = [
-    { reps: 1, pct: 1.00 },
-    { reps: 2, pct: 0.95 },
-    { reps: 3, pct: 0.93 },
-    { reps: 4, pct: 0.90 },
-    { reps: 5, pct: 0.87 },
-    { reps: 6, pct: 0.85 },
-    { reps: 7, pct: 0.83 },
-    { reps: 8, pct: 0.80 },
-    { reps: 9, pct: 0.77 },
-    { reps: 10, pct: 0.75 },
-    { reps: 12, pct: 0.70 }
-];
-function percentFromRepsToFailure(repsToFailure) {
-    const r = Math.max(1, Math.round(repsToFailure));
-    // Use NSCA chart for 1–12 (linear interpolation for 11).
-    if (r <= 12) {
-        for (let i = 0; i < NSCA_REP_PCT.length; i++) {
-            if (NSCA_REP_PCT[i].reps === r)
-                return NSCA_REP_PCT[i].pct;
-            if (NSCA_REP_PCT[i].reps > r) {
-                const hi = NSCA_REP_PCT[i];
-                const lo = NSCA_REP_PCT[i - 1];
-                const t = (r - lo.reps) / (hi.reps - lo.reps);
-                return lo.pct + t * (hi.pct - lo.pct);
-            }
-        }
-        return 0.70;
-    }
-    // For higher rep ranges, fall back to a smooth curve (Epley-style).
-    // This is conservative and avoids extreme low-load prescriptions.
-    return Math.max(0.30, 1 / (1 + (r / 30)));
-}
-function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
-function oneRMKeyForExercise(ex) {
-    // Prefer explicit key if present
-    if (ex === null || ex === void 0 ? void 0 : ex.oneRMKey)
-        return ex.oneRMKey;
-    // If primary matches a 1RM key, use it.
-    const p = ex === null || ex === void 0 ? void 0 : ex.primary;
-    if (p && (p === 'chest' || p === 'shoulders' || p === 'lats' || p === 'quads' || p === 'hamstrings'))
-        return p;
-    const n = ((ex === null || ex === void 0 ? void 0 : ex.name) || '').toLowerCase();
-    // Chest: bench variations
-    if (n.includes('bench') && n.includes('press'))
-        return 'chest';
-    if (n.includes('chest press'))
-        return 'chest';
-    // Shoulders: overhead/shoulder press
-    if (n.includes('overhead') && n.includes('press'))
-        return 'shoulders';
-    if (n.includes('shoulder') && n.includes('press'))
-        return 'shoulders';
-    // Common shorthand
-    if (n === 'ohp' || n.includes('military press'))
-        return 'shoulders';
-    // Lats/upper back: pull-ups/chins/rows/pulldowns (for 1RM we treat as "lats" key)
-    if (n.includes('pull-up') || n.includes('pull up') || n.includes('chin-up') || n.includes('chin up'))
-        return 'lats';
-    if (n.includes('lat pulldown') || n.includes('pull-down') || n.includes('pulldown'))
-        return 'lats';
-    if (n.includes('row'))
-        return 'lats';
-    // Quads: squat patterns
-    if (n.includes('squat'))
-        return 'quads';
-    if (n.includes('leg press'))
-        return 'quads';
-    // Hamstrings/posterior: deadlift patterns
-    if (n.includes('deadlift') || n.includes('rdl') || n.includes('romanian'))
-        return 'hamstrings';
-    if (n.includes('hip thrust'))
-        return 'hamstrings';
-    return null;
-}
-function getOneRMForExercise(ex, oneRMs) {
-    const key = oneRMKeyForExercise(ex);
-    return key ? oneRMs === null || oneRMs === void 0 ? void 0 : oneRMs[key] : null;
-}
-function calcMainLiftWeight(oneRM, repsRange, rir, experience, programType, role, phase) {
-    var _a, _b, _c, _d;
-    if (!oneRM)
-        return null;
-    const minRep = (_a = repsRange === null || repsRange === void 0 ? void 0 : repsRange[0]) !== null && _a !== void 0 ? _a : 5;
-    const maxRep = (_b = repsRange === null || repsRange === void 0 ? void 0 : repsRange[1]) !== null && _b !== void 0 ? _b : minRep;
-    // Main lifts bias to the lower end of the rep range in strength/powerbuilding.
-    const baseReps = (role === 'main' && (programType === 'Strength' || programType === 'Powerbuilding'))
-        ? minRep
-        : Math.round((minRep + maxRep) / 2);
-    // Convert prescription (reps + RIR) into reps-to-failure, then %1RM.
-    const repsToFailure = baseReps + (rir !== null && rir !== void 0 ? rir : 0);
-    let pct = percentFromRepsToFailure(repsToFailure);
-    // Program-specific intent (small nudges; the reps+RIR already does most of the work).
-    const programAdj = {
-        Hypertrophy: -0.01,
-        Strength: 0.02,
-        Powerbuilding: 0.01,
-        Minimalist: 0.00,
-        'Power / Speed-Strength': 0.03,
-        'German Volume Training (GVT)': -0.05
-    };
-    pct += ((_c = programAdj[programType]) !== null && _c !== void 0 ? _c : 0);
-    // Experience: be slightly more conservative for beginners.
-    const expAdj = {
-        Beginner: -0.03,
-        Intermediate: 0.00,
-        Advanced: 0.01
-    };
-    pct += ((_d = expAdj[experience]) !== null && _d !== void 0 ? _d : 0);
-    // Phase intensity adjustment is stored as "percentage points" (e.g., +10 => +0.10).
-    // Deloads reduce intensity further.
-    if ((phase === null || phase === void 0 ? void 0 : phase.intensityAdj) != null)
-        pct += (phase.intensityAdj / 100);
-    if (phase === null || phase === void 0 ? void 0 : phase.isDeload)
-        pct -= 0.08;
-    // Role adjustment
-    if (role === 'secondary')
-        pct -= 0.03;
-    
-    // ========================================
-    // FIX #1: ENFORCE INTENSITY ZONES (Evidence-Based)
-    // ========================================
-    const phaseName = (phase === null || phase === void 0 ? void 0 : phase.phase) || 'Base';
-    const isMainOrSecondary = role === 'main' || role === 'secondary';
-    
-    // STRENGTH PROGRAMS: Must be >85% for Peak phase mains (Prilepin's Table)
-    if (programType === 'Strength' || programType === 'Power / Speed-Strength') {
-        if (phaseName === 'Peak' && isMainOrSecondary) {
-            if (pct < 0.85) {
-                console.warn('⚠️ Strength Peak intensity enforced: ' + Math.round(pct * 100) + '% → 87%');
-                pct = 0.87;
-            }
-        } else if (phaseName === 'Intensification' && isMainOrSecondary) {
-            if (pct < 0.75) pct = 0.77;
-        } else if (phaseName === 'Base' && isMainOrSecondary) {
-            if (pct < 0.70) pct = 0.72;
-        }
-    }
-    
-    // HYPERTROPHY PROGRAMS: 60-85% 1RM sweet spot (Schoenfeld et al., 2017)
-    if (programType === 'Hypertrophy' || programType.includes('GVT') || 
-        programType === 'Specialization (Body-Part Focus)') {
-        if (isMainOrSecondary) {
-            if (pct > 0.85) {
-                console.warn('⚠️ Hypertrophy intensity capped: ' + Math.round(pct * 100) + '% → 82%');
-                pct = 0.82;
-            }
-            if (pct < 0.60) {
-                console.warn('⚠️ Hypertrophy intensity enforced: ' + Math.round(pct * 100) + '% → 65%');
-                pct = 0.65;
-            }
-        }
-    }
-    
-    // POWERBUILDING: Hybrid zones
-    if (programType === 'Powerbuilding') {
-        const dayIntent = (phase === null || phase === void 0 ? void 0 : phase.dayIntent) || 'mixed';
-        if (dayIntent === 'strength' && isMainOrSecondary) {
-            if (pct < 0.80) pct = 0.82;
-        } else if (dayIntent === 'hypertrophy' && isMainOrSecondary) {
-            if (pct > 0.80) pct = 0.77;
-            if (pct < 0.65) pct = 0.67;
-        }
-    }
-    
-    pct = clamp(pct, 0.40, 0.95);
-    return roundWeight(oneRM * pct);
-}
-function getPhaseParams(week) {
-    if (week <= 4) {
-        return {
-            phase: 'Base',
-            volumeMult: week === 4 ? 0.5 : 1.0,
-            intensityAdj: 0,
-            isDeload: week === 4
-        };
-    }
-    else if (week <= 8) {
-        return {
-            phase: 'Intensification',
-            volumeMult: week === 8 ? 0.5 : 0.85,
-            intensityAdj: week === 8 ? -10 : 5,
-            isDeload: week === 8
-        };
-    }
-    else {
-        return {
-            phase: 'Peak',
-            volumeMult: week === 12 ? 0.5 : 0.7,
-            intensityAdj: week === 12 ? -15 : 10,
-            isDeload: week === 12
-        };
-    }
-}
-// Rep ranges are phase- and role-aware for Powerbuilding.
-// This is critical to make the 12-week block behave like real powerbuilding:
-//   Base: higher reps (volume + skill)
-//   Intensification: moderate reps (strength)
-//   Peak: low reps (strength expression), while accessories remain hypertrophy-focused.
-// Rep ranges are phase- and role-aware.
-// Philosophy:
-// - Hypertrophy: moderate reps, close-ish effort
-// - Strength: phase-driven (base→intensification→peak), main lifts become more specific + lower rep
-// - Powerbuilding: day intent separates strength vs hypertrophy days; phases still matter
-// - Minimalist: moderate reps, conservative fatigue
-function getRepRange(programType, exType, position, role = 'accessory', phaseName = 'Base', dayIntent = null) {
-    const bump = (r) => (position === 0 ? r : [r[0] + 2, r[1] + 3]);
-    
-    // ========================================
-    // FIX #8: GVT 10×10 REP PROTOCOL
-    // ========================================
-    if (programType === 'German Volume Training (GVT)') {
-        if (role === 'main' && exType === 'compound') {
-            return [10, 10]; // ALWAYS 10 reps for main compounds
-        }
-        return [15, 20]; // Accessories: higher rep
-    }
-    
-    // ---------------- Strength ----------------
-    if (programType === 'Strength') {
-        const isMainish = (role === 'main' || role === 'secondary');
-        if (exType === 'compound' && isMainish) {
-            // Classic block periodization
-            if (phaseName === 'Peak')
-                return bump(role === 'main' ? [1, 3] : [2, 4]);
-            if (phaseName === 'Intensification')
-                return bump([3, 5]);
-            return bump([4, 6]); // Base
-        }
-        // Accessories: hypertrophy-supportive, not excessive
-        const acc = (exType === 'compound') ? [5, 8] : [8, 15];
-        return bump(acc);
-    }
-    // ---------------- Powerbuilding ----------------
-    if (programType === 'Powerbuilding') {
-        const isMainish = (role === 'main' || role === 'secondary');
-        const intent = dayIntent || 'mixed';
-        if (exType === 'compound' && isMainish) {
-            if (phaseName === 'Peak') {
-                if (intent === 'hypertrophy')
-                    return bump(role === 'main' ? [3, 5] : [4, 6]);
-                return bump(role === 'main' ? [1, 4] : [2, 5]);
-            }
-            if (phaseName === 'Intensification') {
-                if (intent === 'hypertrophy')
-                    return bump([4, 7]);
-                return bump([3, 6]);
-            }
-            // Base
-            if (intent === 'hypertrophy')
-                return bump([5, 8]);
-            return bump([4, 8]);
-        }
-        const acc = (exType === 'compound') ? [6, 12] : [10, 20];
-        return bump(acc);
-    }
-    // ---------------- Hypertrophy / Minimalist defaults ----------------
-    const ranges = {
-        Hypertrophy: { compound: [6, 10], isolation: [10, 20] },
-        Minimalist: { compound: [6, 10], isolation: [12, 20] }
-    };
-    const r = (ranges[programType] || ranges.Hypertrophy)[exType];
-    return bump(r);
-}
-function getRIR(experience, exType, setNum, totalSets, programType = 'Hypertrophy', role = 'accessory', phaseName = 'Base', dayIntent = null) {
-    // Base effort by training age
-    const base = {
-        Beginner: { compound: 3, isolation: 2 },
-        Intermediate: { compound: 2, isolation: 1 },
-        Advanced: { compound: 1, isolation: 0 }
-    };
-    let rir = (base[experience] && base[experience][exType] != null) ? base[experience][exType] : 2;
-    // Set-to-set shaping: first set slightly easier, last set slightly harder
-    if (setNum === 1)
-        rir += 1;
-    else if (setNum === totalSets)
-        rir = Math.max(0, rir - 1);
-    // Program intent modifiers
-    const isMainish = (role === 'main' || role === 'secondary');
-    const intent = dayIntent || 'mixed';
-    if (programType === 'Strength' && exType === 'compound' && isMainish) {
-        // Strength should express intensity in peak (without forced grinders for most users)
-        if (phaseName === 'Peak')
-            rir = Math.max(0, rir - 1);
-        if (phaseName === 'Intensification')
-            rir = Math.max(0, rir - 0.5);
-    }
-    if (programType === 'Powerbuilding' && exType === 'compound' && isMainish) {
-        if (phaseName === 'Peak' && intent !== 'hypertrophy')
-            rir = Math.max(0, rir - 1);
-        if (intent === 'hypertrophy')
-            rir = Math.min(3, rir + 0.5); // keep technique clean on volume days
-    }
-    // Never allow negative RIR
-    return Math.max(0, Math.round(rir * 2) / 2); // half-step precision
-}
-// ==================== ADVANCED TECHNIQUE LOGIC ====================
-// Applied only when enabled, and only to "safe" accessory work (mostly isolations).
-// These are optional training methods to add variety/density without compromising main lift quality.
-const ADV_TECHNIQUES = [
-    {
-        id: 'drop_set',
-        name: 'Drop Set',
-        level: 'Advanced',
-        description: 'After your final working set, immediately reduce the load (typically 20–30%) and continue for additional controlled reps. This increases metabolic stress and extends the set past initial fatigue.',
-        howToApply: 'After last set, drop ~20–30% and do 8–12 controlled reps.'
-    },
-    {
-        id: 'rest_pause',
-        name: 'Rest-Pause',
-        level: 'Advanced',
-        description: 'Perform a near-failure set, rest briefly (10–20s), then do mini-sets with the same load until the rep quality drops. Great for time-efficient hypertrophy.',
-        howToApply: 'Do 1 set near failure, rest 10–20s, then 2–4 mini-sets of 3–5 reps.'
-    },
-    {
-        id: 'myo_reps',
-        name: 'Myo-Reps',
-        level: 'Advanced',
-        description: 'Do an activation set close to failure, then short-rest mini-sets. Similar to rest-pause but typically used with higher reps and isolation work.',
-        howToApply: 'Activation set 12–20 reps (0–2 RIR), rest 10–15s, then 3–5 mini-sets of 3–5 reps.'
-    },
-    {
-        id: 'tempo',
-        name: 'Tempo',
-        level: 'Intermediate',
-        description: 'Control the eccentric (lowering) phase to increase time under tension and improve technique.',
-        howToApply: 'Use a 3-second controlled lowering on all reps.'
-    }
-];
-function pickTechniqueForExercise(ex, programType, dayIntent) {
-    // Prefer drop set / myo-reps for higher reps; tempo for moderate reps; rest-pause for density.
-    const minRep = Array.isArray(ex.reps) ? ex.reps[0] : 8;
-    if (programType === 'Density (EDT-style)' || dayIntent === 'mixed')
-        return ADV_TECHNIQUES.find(t => t.id === 'rest_pause') || ADV_TECHNIQUES[0];
-    if (minRep >= 12)
-        return ADV_TECHNIQUES.find(t => t.id === 'drop_set') || ADV_TECHNIQUES[0];
-    if (minRep >= 10)
-        return ADV_TECHNIQUES.find(t => t.id === 'myo_reps') || ADV_TECHNIQUES[0];
-    return ADV_TECHNIQUES.find(t => t.id === 'tempo') || ADV_TECHNIQUES[0];
-}
-function applyAdvancedTechniques(exercises, cfg, phaseName, dayIntent) {
-    if (!cfg || !cfg.advancedTechniques)
-        return exercises;
-    const programType = cfg.programType || '';
-    const experience = cfg.experience || '';
-    // Guardrails: avoid adding techniques during peak strength, and avoid for strict Strength / Power blocks.
-    if (programType === 'Strength' || programType === 'Power / Speed-Strength')
-        return exercises;
-    if (phaseName === 'Peak' && (programType === 'Powerbuilding' || programType === 'Strength'))
-        return exercises;
-    // Eligibility: mostly accessories/isolations, and only some of them.
-    const isAllowed = (ex) => {
-        if (!ex || ex.role === 'main' || ex.role === 'secondary')
-            return false;
-        if (ex.type !== 'isolation')
-            return false; // keep conservative
-        // If experience isn't advanced, keep frequency lower.
-        return true;
-    };
-    // Determine frequency. Advanced lifters can handle more.
-    const baseP = (experience === 'advanced') ? 0.35 : (experience === 'intermediate' ? 0.22 : 0.12);
-    return exercises.map((ex, idx) => {
-        if (!isAllowed(ex))
-            return ex;
-        // Avoid techniques on the first accessory if it is low-rep or fatigue heavy.
-        const p = baseP * (idx <= 1 ? 0.7 : 1.0);
-        if (Math.random() > p)
-            return ex;
-        const tech = pickTechniqueForExercise(ex, programType, dayIntent);
-        return { ...ex, technique: tech };
-    });
-}
-function getRest(minRep, exType, programType, role) {
-    // ========================================
-    // FIX #3: EVIDENCE-BASED REST PERIODS
-    // ========================================
-    role = role || 'accessory';
-    
-    // STRENGTH PROGRAMS (3-5min for CNS recovery)
-    if (programType === 'Strength' || programType === 'Power / Speed-Strength') {
-        if (role === 'main' || role === 'secondary') {
-            return '3-5min';
-        }
-        if (minRep <= 6 && exType === 'compound') {
-            return '2-3min';
-        }
-        return '90-120s';
-    }
-    
-    // HYPERTROPHY PROGRAMS (2-3min for compounds - Schoenfeld 2016)
-    if (programType === 'Hypertrophy' || programType.includes('GVT') || 
-        programType === 'Specialization (Body-Part Focus)') {
-        if (exType === 'compound') {
-            if (minRep <= 8) {
-                return '2-3min'; // Heavier compounds need adequate rest
-            }
-            return '90-120s'; // Moderate compounds
-        }
-        return '60-90s'; // Isolation
-    }
-    
-    // POWERBUILDING (Hybrid)
-    if (programType === 'Powerbuilding') {
-        if (role === 'main') return '3-5min';
-        if (exType === 'compound') return '2-3min';
-        return '90s';
-    }
-    
-    // DENSITY/EDT (Short rest by design)
-    if (programType === 'Density (EDT-style)') {
-        return '30-60s';
-    }
-    
-    // GPP/CONDITIONING (Metabolic focus)
-    if (programType === 'GPP / Conditioning-Integrated') {
-        return '45-90s';
-    }
-    
-    // MINIMALIST (Efficient but adequate)
-    if (programType === 'Minimalist') {
-        if (exType === 'compound') return '2-3min';
-        return '90s';
-    }
-    
-    // DEFAULT FALLBACK
-    if (minRep <= 6 && exType === 'compound') {
-        return programType === 'Strength' ? '3-5min' : '2-4min';
-    }
-    if (exType === 'compound')
-        return '90-180s';
-    return '60-120s';
-}
-function buildWarmupSets(ex, programType, phaseName, dayIntent, experience, warmupPrefs) {
-    var _a;
-    // Returns an array of warm-up sets with % of working weight when possible.
-    // Philosophy:
-    // - Main/secondary compounds: 2–4 ramping sets (more when reps are low / peak).
-    // - Accessory compounds: 1–3 warm-up sets depending on load/complexity.
-    // - Isolations: usually 0–1 warm-up set (optional) to avoid wasting time.
-    const prefs = warmupPrefs || { enabled: true, mode: 'full', onlyCompounds: false };
-    if (!prefs.enabled)
-        return [];
-    const exType = (ex === null || ex === void 0 ? void 0 : ex.type) || 'compound';
-    const role = (ex === null || ex === void 0 ? void 0 : ex.role) || 'accessory';
-    const intent = dayIntent || (programType === 'Powerbuilding' ? 'mixed' : (programType === 'Hypertrophy' ? 'hypertrophy' : (programType === 'Strength' ? 'strength' : 'mixed')));
-    const reps = (ex === null || ex === void 0 ? void 0 : ex.reps) || [8, 12];
-    const minRep = (_a = reps[0]) !== null && _a !== void 0 ? _a : 8;
-    const isMainish = (role === 'main' || role === 'secondary');
-    const isCompound = exType === 'compound';
-    // If user prefers warm-ups only for compounds, skip isolations.
-    if (prefs.onlyCompounds && !isCompound)
-        return [];
-    // Decide count
-    let count = 0;
-    if (!isCompound) {
-        // Isolation: one light set is enough for most people; skip on minimalist-strength intent.
-        if (!(programType === 'Minimalist' && intent === 'strength'))
-            count = 1;
-    }
-    else {
-        if (isMainish) {
-            // Heavy / low rep work needs more ramp.
-            if (minRep <= 3)
-                count = 4;
-            else if (minRep <= 6)
-                count = 3;
-            else
-                count = 2;
-            // In Peak strength intent, keep but don't overdo.
-            if (programType === 'Strength' && phaseName === 'Peak')
-                count = Math.max(count, 3);
-            // Minimalist: keep warm-ups brief
-            if (programType === 'Minimalist')
-                count = Math.min(count, 2);
-        }
-        else {
-            // Accessory compound
-            if (minRep <= 6)
-                count = 2;
-            else
-                count = 1;
-            if (programType === 'Hypertrophy' && intent === 'hypertrophy')
-                count = Math.max(count, 2);
-            if (programType === 'Minimalist')
-                count = 1;
-        }
-    }
-    if (count <= 0)
-        return [];
-    // Minimal mode trims warm-up volume (keep the last ~2 steps of the ramp).
-    if (prefs.mode === 'minimal') {
-        count = Math.min(2, count);
-    }
-    // Percent ramp templates (of estimated working weight)
-    // Keep final warm-up close but not fatiguing.
-    let pctRamp = [];
-    if (!isCompound) {
-        pctRamp = [50];
-    }
-    else if (count === 1) {
-        pctRamp = [50];
-    }
-    else if (count === 2) {
-        pctRamp = [45, 70];
-    }
-    else if (count === 3) {
-        pctRamp = [40, 60, 75];
-    }
-    else { // 4+
-        pctRamp = [35, 55, 70, 82];
-    }
-    if (prefs.mode === 'minimal' && pctRamp.length > 2) {
-        pctRamp = pctRamp.slice(-2);
-    }
-    // Warm-up reps: higher early, lower later; never to fatigue.
-    const repRamp = pctRamp.map((p, i) => {
-        if (!isCompound)
-            return Math.min(12, Math.max(8, minRep));
-        if (i === 0)
-            return Math.min(8, Math.max(5, minRep + 2));
-        if (i === 1)
-            return Math.min(6, Math.max(3, minRep));
-        if (i === pctRamp.length - 1)
-            return Math.min(3, Math.max(1, Math.round(minRep / 2)));
-        return Math.min(5, Math.max(2, minRep - 1));
-    });
-    // Use suggested working weight if available; otherwise leave weights null
-    const workW = (ex === null || ex === void 0 ? void 0 : ex.weight) ? parseFloat(ex.weight) : null;
-    return pctRamp.map((pct, i) => {
-        var _a;
-        const w = (workW && workW > 0) ? roundWeight(workW * (pct / 100)) : null;
-        return {
-            reps: (_a = repRamp[i]) !== null && _a !== void 0 ? _a : 5,
-            pct,
-            weight: w ? String(w) : null,
-            note: (workW && w) ? null : 'easy'
-        };
-    });
-}
-function getSets(experience, exType, programType) {
-    const volumeMap = {
-        Beginner: { compound: 3, isolation: 2 },
-        Intermediate: { compound: 4, isolation: 3 },
-        Advanced: { compound: 5, isolation: 3 }
-    };
-    const multiplier = programType === 'Strength' ? 0.75 :
-        programType === 'Minimalist' ? 0.6 : 1.0;
-    return Math.max(2, Math.round(volumeMap[experience][exType] * multiplier));
-}
-// ==================== PROGRAM GENERATION ====================
-/**
- * BULLETPROOF PROGRAM GENERATOR (v3)
- * Hypertrophy-first with Powerbuilding overlay.
- *
- * Key upgrades vs legacy generator:
- * - Muscle-first weekly volume targets with MEV→MAV ramping inside each 4-week block.
- * - Deterministic constraint-solver exercise selection (no carousel rotation).
- * - Block stability: exercises remain fixed within weeks 1–3 of each block.
- * - Fractional set accounting (primary=1.0, secondary=0.5) to avoid hidden arm/delt overload.
- * - Fatigue-aware ordering and time-cap trimming.
- *
- * Note: Full closed-loop (logbook → next prescription) requires workout logging UI; this generator
- * produces a robust 12-week plan given current UI inputs.
+/*
+ * LiftAI v7 - FULLY CORRECTED VERSION
+ * 
+ * ALL FIXES APPLIED AND VERIFIED:
+ * ✅ Syntax error fixed
+ * ✅ Workout detail buttons working
+ * ✅ Day selector multi-select working
+ * ✅ Exercise variation using weekIndex
+ * ✅ Readiness modal fully functional
+ * ✅ Athlete details saved and loaded
+ * ✅ Preference fields working
+ * ✅ Injury system working
+ * ✅ All dropdowns populated
+ * ✅ Mobile styling fixed
  */
-// ------------------------------------------------------------
-// PROGRAM PROFILES (programType-driven split + slots + scoring)
-// ------------------------------------------------------------
-const PROGRAM_PROFILES = (() => {
-    const DEFAULT_SPLITS = {
-        3: ['Full', 'Full', 'Full'],
-        4: ['Upper', 'Lower', 'Upper', 'Lower'],
-        5: ['Upper', 'Lower', 'Upper', 'Lower', 'Upper'],
-        6: ['Push', 'Pull', 'Legs', 'Push', 'Pull', 'Legs']
-    };
-    const HYPERTROPHY_SLOTS = {
-        Upper: [
-            { pool: 'chest_horizontal', fallback: 'horizontal_push', role: 'main', type: 'compound' },
-            { pool: 'back_horizontal', fallback: 'horizontal_pull', role: 'main', type: 'compound' },
-            { pool: 'shoulders_press', fallback: 'vertical_push', role: 'secondary', type: 'compound' },
-            { pool: 'back_vertical', fallback: 'vertical_pull', role: 'secondary', type: 'compound' },
-            { pool: 'shoulders_lateral', fallback: 'shoulders_lateral', role: 'accessory', type: 'isolation' },
-            { pool: 'arms_biceps', fallback: 'arms_biceps', role: 'accessory', type: 'isolation' },
-            { pool: 'arms_triceps', fallback: 'arms_triceps', role: 'accessory', type: 'isolation' }
-        ],
-        Lower: [
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'main', type: 'compound' },
-            { pool: 'legs_hinge', fallback: 'hinge_pattern', role: 'main', type: 'compound' },
-            { pool: 'legs_quad_isolation', fallback: 'legs_quad_isolation', role: 'accessory', type: 'isolation' },
-            { pool: 'legs_hamstring_isolation', fallback: 'legs_hamstring_isolation', role: 'accessory', type: 'isolation' },
-            { pool: 'legs_calves', fallback: 'legs_calves', role: 'accessory', type: 'isolation' },
-            { pool: 'core_antiextension', fallback: 'core_antirotation', role: 'accessory', type: 'isolation', optional: true }
-        ],
-        Push: [
-            { pool: 'chest_horizontal', fallback: 'horizontal_push', role: 'main', type: 'compound' },
-            { pool: 'shoulders_press', fallback: 'vertical_push', role: 'secondary', type: 'compound' },
-            { pool: 'chest_isolation', fallback: 'isolation', role: 'accessory', type: 'isolation' },
-            { pool: 'shoulders_lateral', fallback: 'shoulders_lateral', role: 'accessory', type: 'isolation' },
-            { pool: 'arms_triceps', fallback: 'arms_triceps', role: 'accessory', type: 'isolation' }
-        ],
-        Pull: [
-            { pool: 'back_vertical', fallback: 'vertical_pull', role: 'main', type: 'compound' },
-            { pool: 'back_horizontal', fallback: 'horizontal_pull', role: 'secondary', type: 'compound' },
-            { pool: 'shoulders_rear', fallback: 'shoulders_rear', role: 'accessory', type: 'isolation' },
-            { pool: 'arms_biceps', fallback: 'arms_biceps', role: 'accessory', type: 'isolation' }
-        ],
-        Legs: [
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'main', type: 'compound' },
-            { pool: 'legs_hinge', fallback: 'hinge_pattern', role: 'main', type: 'compound' },
-            { pool: 'legs_quad_isolation', fallback: 'legs_quad_isolation', role: 'accessory', type: 'isolation' },
-            { pool: 'legs_hamstring_isolation', fallback: 'legs_hamstring_isolation', role: 'accessory', type: 'isolation' },
-            { pool: 'legs_calves', fallback: 'legs_calves', role: 'accessory', type: 'isolation' },
-            { pool: 'core_antirotation', fallback: 'core_antiextension', role: 'accessory', type: 'isolation', optional: true }
-        ],
-        Full: [
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'main', type: 'compound' },
-            { pool: 'chest_horizontal', fallback: 'horizontal_push', role: 'main', type: 'compound' },
-            { pool: 'back_horizontal', fallback: 'horizontal_pull', role: 'secondary', type: 'compound' },
-            { pool: 'legs_hinge', fallback: 'hinge_pattern', role: 'secondary', type: 'compound' },
-            { pool: 'back_vertical', fallback: 'vertical_pull', role: 'accessory', type: 'compound', optional: true },
-            { pool: 'core_antirotation', fallback: 'core_antiextension', role: 'accessory', type: 'isolation' }
-        ]
-    };
-    const STRENGTH_SLOTS = {
-        Upper: [
-            { pool: 'chest_horizontal', fallback: 'horizontal_push', role: 'main', type: 'compound', requireMainLiftKey: 'bench' },
-            { pool: 'back_horizontal', fallback: 'horizontal_pull', role: 'main', type: 'compound' },
-            { pool: 'shoulders_press', fallback: 'vertical_push', role: 'secondary', type: 'compound', preferMainLiftKey: 'ohp' },
-            { pool: 'back_vertical', fallback: 'vertical_pull', role: 'secondary', type: 'compound' },
-            { pool: 'arms_triceps', fallback: 'arms_triceps', role: 'accessory', type: 'isolation' },
-            { pool: 'shoulders_rear', fallback: 'shoulders_rear', role: 'accessory', type: 'isolation' },
-            { pool: 'core_antirotation', fallback: 'core_antiextension', role: 'accessory', type: 'isolation', optional: true }
-        ],
-        Lower: [
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'main', type: 'compound', requireMainLiftKey: 'squat' },
-            { pool: 'legs_hinge', fallback: 'hinge_pattern', role: 'main', type: 'compound', preferMainLiftKey: 'deadlift' },
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'secondary', type: 'compound', secondarySlot: true },
-            { pool: 'legs_hamstring_isolation', fallback: 'legs_hamstring_isolation', role: 'accessory', type: 'isolation' },
-            { pool: 'core_antiextension', fallback: 'core_antirotation', role: 'accessory', type: 'isolation' }
-        ],
-        Full: [
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'main', type: 'compound', requireMainLiftKey: 'squat' },
-            { pool: 'chest_horizontal', fallback: 'horizontal_push', role: 'main', type: 'compound', requireMainLiftKey: 'bench' },
-            { pool: 'legs_hinge', fallback: 'hinge_pattern', role: 'secondary', type: 'compound', preferMainLiftKey: 'deadlift' },
-            { pool: 'back_horizontal', fallback: 'horizontal_pull', role: 'secondary', type: 'compound' },
-            { pool: 'core_antirotation', fallback: 'core_antiextension', role: 'accessory', type: 'isolation' }
-        ],
-        Push: HYPERTROPHY_SLOTS.Push,
-        Pull: HYPERTROPHY_SLOTS.Pull,
-        Legs: HYPERTROPHY_SLOTS.Legs
-    };
-    // POWERBUILDING = Strength identity + hypertrophy volume.
-    // Critical app-specific rule: repeated "Upper" or "Lower" day types must NOT be identical.
-    // So we define A/B variants with different slot ordering and intent:
-    // - UpperA = Bench priority + horizontal pulling
-    // - UpperB = Bench volume/variation priority + more vertical pulling/shoulders
-    // - LowerA = Squat priority + lighter hinge work
-    // - LowerB = Hinge (deadlift) priority + squat variation
-    const POWERBUILDING_SLOTS = {
-        UpperA: [
-            { pool: 'chest_horizontal', fallback: 'horizontal_push', role: 'main', type: 'compound', requireMainLiftKey: 'bench' },
-            { pool: 'back_horizontal', fallback: 'horizontal_pull', role: 'main', type: 'compound' },
-            { pool: 'back_vertical', fallback: 'vertical_pull', role: 'secondary', type: 'compound' },
-            { pool: 'shoulders_press', fallback: 'vertical_push', role: 'secondary', type: 'compound', preferMainLiftKey: 'ohp' },
-            { pool: 'shoulders_lateral', fallback: 'shoulders_lateral', role: 'accessory', type: 'isolation' },
-            { pool: 'arms_triceps', fallback: 'arms_triceps', role: 'accessory', type: 'isolation' },
-            { pool: 'arms_biceps', fallback: 'arms_biceps', role: 'accessory', type: 'isolation' }
-        ],
-        UpperB: [
-            // Still guarantees a bench pattern, but aims to avoid exact duplication with UpperA.
-            // The selector will often choose a different bench variant (incline/DB/CG) due to differing downstream needs.
-            { pool: 'chest_horizontal', fallback: 'horizontal_push', role: 'main', type: 'compound', requireMainLiftKey: 'bench' },
-            { pool: 'back_vertical', fallback: 'vertical_pull', role: 'main', type: 'compound' },
-            { pool: 'back_horizontal', fallback: 'horizontal_pull', role: 'secondary', type: 'compound' },
-            { pool: 'shoulders_press', fallback: 'vertical_push', role: 'secondary', type: 'compound', preferMainLiftKey: 'ohp' },
-            { pool: 'chest_isolation', fallback: 'isolation', role: 'accessory', type: 'isolation', optional: true },
-            { pool: 'shoulders_lateral', fallback: 'shoulders_lateral', role: 'accessory', type: 'isolation' },
-            { pool: 'arms_biceps', fallback: 'arms_biceps', role: 'accessory', type: 'isolation' },
-            { pool: 'arms_triceps', fallback: 'arms_triceps', role: 'accessory', type: 'isolation' }
-        ],
-        LowerA: [
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'main', type: 'compound', requireMainLiftKey: 'squat' },
-            // Prefer hinge variations that are less systemically fatiguing in Squat-priority day
-            { pool: 'legs_hinge', fallback: 'hinge_pattern', role: 'secondary', type: 'compound', preferMainLiftKey: 'deadlift' },
-            { pool: 'legs_quad_isolation', fallback: 'legs_quad_isolation', role: 'accessory', type: 'isolation' },
-            { pool: 'legs_hamstring_isolation', fallback: 'legs_hamstring_isolation', role: 'accessory', type: 'isolation' },
-            { pool: 'legs_calves', fallback: 'legs_calves', role: 'accessory', type: 'isolation', optional: true },
-            { pool: 'core_antiextension', fallback: 'core_antirotation', role: 'accessory', type: 'isolation', optional: true }
-        ],
-        LowerB: [
-            { pool: 'legs_hinge', fallback: 'hinge_pattern', role: 'main', type: 'compound', preferMainLiftKey: 'deadlift' },
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'secondary', type: 'compound', requireMainLiftKey: 'squat', secondarySlot: true },
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'secondary', type: 'compound', secondarySlot: true, optional: true },
-            { pool: 'legs_hamstring_isolation', fallback: 'legs_hamstring_isolation', role: 'accessory', type: 'isolation' },
-            { pool: 'legs_quad_isolation', fallback: 'legs_quad_isolation', role: 'accessory', type: 'isolation' },
-            { pool: 'core_antirotation', fallback: 'core_antiextension', role: 'accessory', type: 'isolation', optional: true }
-        ],
-        // Full body day remains a stable template.
-        Full: [
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'main', type: 'compound', requireMainLiftKey: 'squat' },
-            { pool: 'chest_horizontal', fallback: 'horizontal_push', role: 'main', type: 'compound', requireMainLiftKey: 'bench' },
-            { pool: 'legs_hinge', fallback: 'hinge_pattern', role: 'secondary', type: 'compound', preferMainLiftKey: 'deadlift' },
-            { pool: 'back_horizontal', fallback: 'horizontal_pull', role: 'secondary', type: 'compound' },
-            { pool: 'back_vertical', fallback: 'vertical_pull', role: 'accessory', type: 'compound', optional: true },
-            { pool: 'shoulders_lateral', fallback: 'shoulders_lateral', role: 'accessory', type: 'isolation', optional: true }
-        ],
-        Push: HYPERTROPHY_SLOTS.Push,
-        Pull: HYPERTROPHY_SLOTS.Pull,
-        Legs: HYPERTROPHY_SLOTS.Legs,
-        // Backwards-compat: if any legacy split still uses "Upper"/"Lower", map them to A variants.
-        Upper: [
-            { pool: 'chest_horizontal', fallback: 'horizontal_push', role: 'main', type: 'compound', requireMainLiftKey: 'bench' },
-            { pool: 'back_horizontal', fallback: 'horizontal_pull', role: 'main', type: 'compound' },
-            { pool: 'back_vertical', fallback: 'vertical_pull', role: 'secondary', type: 'compound' },
-            { pool: 'shoulders_press', fallback: 'vertical_push', role: 'secondary', type: 'compound', preferMainLiftKey: 'ohp' },
-            { pool: 'shoulders_lateral', fallback: 'shoulders_lateral', role: 'accessory', type: 'isolation' },
-            { pool: 'arms_triceps', fallback: 'arms_triceps', role: 'accessory', type: 'isolation' },
-            { pool: 'arms_biceps', fallback: 'arms_biceps', role: 'accessory', type: 'isolation' }
-        ],
-        Lower: [
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'main', type: 'compound', requireMainLiftKey: 'squat' },
-            { pool: 'legs_hinge', fallback: 'hinge_pattern', role: 'secondary', type: 'compound', preferMainLiftKey: 'deadlift' },
-            { pool: 'legs_quad_isolation', fallback: 'legs_quad_isolation', role: 'accessory', type: 'isolation' },
-            { pool: 'legs_hamstring_isolation', fallback: 'legs_hamstring_isolation', role: 'accessory', type: 'isolation' },
-            { pool: 'core_antiextension', fallback: 'core_antirotation', role: 'accessory', type: 'isolation', optional: true }
-        ]
-    };
-    const MINIMALIST_SLOTS = {
-        Upper: [
-            { pool: 'chest_horizontal', fallback: 'horizontal_push', role: 'main', type: 'compound' },
-            { pool: 'back_horizontal', fallback: 'horizontal_pull', role: 'main', type: 'compound' },
-            { pool: 'shoulders_lateral', fallback: 'shoulders_lateral', role: 'accessory', type: 'isolation' },
-            { pool: 'arms_triceps', fallback: 'arms_triceps', role: 'accessory', type: 'isolation', supersetGroup: 'A' },
-            { pool: 'arms_biceps', fallback: 'arms_biceps', role: 'accessory', type: 'isolation', supersetGroup: 'A' }
-        ],
-        Lower: [
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'main', type: 'compound' },
-            { pool: 'legs_hinge', fallback: 'hinge_pattern', role: 'main', type: 'compound' },
-            { pool: 'legs_calves', fallback: 'legs_calves', role: 'accessory', type: 'isolation' },
-            { pool: 'core_antirotation', fallback: 'core_antiextension', role: 'accessory', type: 'isolation' }
-        ],
-        Full: [
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'main', type: 'compound' },
-            { pool: 'chest_horizontal', fallback: 'horizontal_push', role: 'main', type: 'compound' },
-            { pool: 'back_vertical', fallback: 'vertical_pull', role: 'secondary', type: 'compound' },
-            { pool: 'legs_hinge', fallback: 'hinge_pattern', role: 'secondary', type: 'compound' },
-            { pool: 'core_antiextension', fallback: 'core_antirotation', role: 'accessory', type: 'isolation' }
-        ],
-        Push: [
-            { pool: 'chest_horizontal', fallback: 'horizontal_push', role: 'main', type: 'compound' },
-            { pool: 'shoulders_press', fallback: 'vertical_push', role: 'secondary', type: 'compound' },
-            { pool: 'arms_triceps', fallback: 'arms_triceps', role: 'accessory', type: 'isolation' }
-        ],
-        Pull: [
-            { pool: 'back_vertical', fallback: 'vertical_pull', role: 'main', type: 'compound' },
-            { pool: 'back_horizontal', fallback: 'horizontal_pull', role: 'secondary', type: 'compound' },
-            { pool: 'arms_biceps', fallback: 'arms_biceps', role: 'accessory', type: 'isolation' }
-        ],
-        Legs: [
-            { pool: 'legs_squat', fallback: 'squat_pattern', role: 'main', type: 'compound' },
-            { pool: 'legs_hinge', fallback: 'hinge_pattern', role: 'main', type: 'compound' },
-            { pool: 'core_antirotation', fallback: 'core_antiextension', role: 'accessory', type: 'isolation' }
-        ]
-    };
-    function scoringFor(type) {
-        switch (type) {
-            case 'Strength':
-                return { needW: 0.55, stimW: 0.20, romW: 0.05, fatigueW: 0.55, setupW: 0.20, skillW: 0.35, mainLiftBonus: 0.55, preferMachine: -0.08, preferFreeWeight: 0.12, stimulusToFatigueW: 0.10 };
-            case 'Powerbuilding':
-                // Blend: keep strong need+stimulus, but raise main-lift bonus and fatigue sensitivity.
-                return { needW: 0.70, stimW: 0.28, romW: 0.15, fatigueW: 0.42, setupW: 0.20, skillW: 0.25, mainLiftBonus: 0.35, preferMachine: 0.05, preferFreeWeight: 0.08, stimulusToFatigueW: 0.18 };
-            case 'Minimalist':
-                return { needW: 0.60, stimW: 0.35, romW: 0.10, fatigueW: 0.30, setupW: 0.40, skillW: 0.15, mainLiftBonus: 0.10, preferMachine: 0.12, preferFreeWeight: 0.00, stimulusToFatigueW: 0.30 };
-            case 'Hypertrophy':
-            default:
-                return { needW: 0.75, stimW: 0.35, romW: 0.25, fatigueW: 0.30, setupW: 0.20, skillW: 0.20, mainLiftBonus: 0.15, preferMachine: 0.10, preferFreeWeight: 0.03, stimulusToFatigueW: 0.22 };
-        }
+
+'use strict';
+
+const $ = (id) => document.getElementById(id);
+const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
+const roundTo = (n, step) => {
+  const s = Number(step) || 1;
+  if (!Number.isFinite(n)) return 0;
+  return Math.round(n / s) * s;
+};
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+function safeJsonParse(str, fallback) {
+  try {
+    const v = JSON.parse(str);
+    return v ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function notify(msg) {
+  const t = document.getElementById('toast');
+  if (t) {
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(notify._timer);
+    notify._timer = setTimeout(() => { t.classList.remove('show'); }, 2200);
+  }
+  console.log(msg);
+}
+
+// v7.45 CLOUD SYNC: Supabase configuration
+const SUPABASE_URL = 'https://xbqlejwtfbeebucrdvqn.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhicWxland0ZmJlZWJ1Y3JkdnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODgzODEsImV4cCI6MjA4NTY2NDM4MX0.1RdmT3twtadvxTjdepaqSYaqZRFkOAMhWyRQOjf-Zp0';
+
+// Initialize Supabase client (loaded from CDN)
+let supabase = null;
+
+// Get or create anonymous user ID
+function getAnonymousUserId() {
+  let userId = localStorage.getItem('liftai_user_id');
+  if (!userId) {
+    userId = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('liftai_user_id', userId);
+    console.log('✅ Created new anonymous user ID:', userId);
+  }
+  return userId;
+}
+
+// Initialize Supabase when window loads
+function initializeSupabase() {
+  try {
+    if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log('✅ Supabase client initialized');
+      return true;
+    } else {
+      console.warn('⚠️ Supabase SDK not loaded - cloud sync disabled');
+      return false;
     }
-    const SPLIT_OVERRIDES = {
-        Strength: {
-            3: ['Full', 'Full', 'Full'],
-            4: ['Upper', 'Lower', 'Upper', 'Lower'],
-            5: ['Upper', 'Lower', 'Full', 'Upper', 'Lower'],
-            6: ['Upper', 'Lower', 'Upper', 'Lower', 'Full', 'Full']
-        },
-        Powerbuilding: {
-            3: ['Full', 'Full', 'Full'],
-            4: ['UpperA', 'LowerA', 'UpperB', 'LowerB'],
-            // 5 days: bench frequency + balanced lower exposure
-            5: ['UpperA', 'LowerA', 'Full', 'UpperB', 'LowerB'],
-            6: ['Upper', 'Lower', 'Upper', 'Lower', 'Full', 'Full']
-        },
-        Minimalist: {
-            3: ['Full', 'Full', 'Full'],
-            4: ['Upper', 'Lower', 'Upper', 'Lower'],
-            5: ['Upper', 'Lower', 'Full', 'Upper', 'Lower'],
-            6: ['Push', 'Pull', 'Legs', 'Full', 'Upper', 'Lower']
-        }
+  } catch (error) {
+    console.error('❌ Failed to initialize Supabase:', error);
+    return false;
+  }
+}
+
+// Cloud Sync: Push current block to cloud
+async function pushBlockToCloud() {
+  if (!supabase) {
+    notify('⚠️ Cloud sync not available - please refresh the page');
+    return false;
+  }
+  
+  if (!state.currentBlock || !state.currentBlock.weeks || state.currentBlock.weeks.length === 0) {
+    notify('⚠️ No training block to save - generate a block first');
+    return false;
+  }
+  
+  try {
+    notify('☁️ Saving to cloud...');
+    
+    const userId = getAnonymousUserId();
+    const blockName = state.currentBlock.name || `Block ${new Date().toLocaleDateString()}`;
+    
+    // Prepare block data
+    const blockData = {
+      user_id: userId,
+      block_name: blockName,
+      block_data: state.currentBlock,
+      profile_data: {
+        name: state.profile.name || '',
+        maxes: state.profile.maxes || {},
+        programType: state.profile.programType || 'general',
+        athleteMode: state.profile.athleteMode || 'recreational',
+        volumePref: state.profile.volumePref || 'reduced',
+        duration: state.profile.duration || 75,
+        blockLength: state.profile.blockLength || 8,
+        trainingAge: state.profile.trainingAge || 1,
+        injuries: state.profile.injuries || []
+      },
+      block_length: state.currentBlock.weeks.length,
+      program_type: state.profile.programType || 'general',
+      is_active: true
     };
-    return {
-        Hypertrophy: { name: 'Hypertrophy', splitTemplates: DEFAULT_SPLITS, daySlots: HYPERTROPHY_SLOTS, scoring: scoringFor('Hypertrophy') },
-        Strength: { name: 'Strength', splitTemplates: { ...DEFAULT_SPLITS, ...(SPLIT_OVERRIDES.Strength || {}) }, daySlots: STRENGTH_SLOTS, scoring: scoringFor('Strength') },
-        Powerbuilding: { name: 'Powerbuilding', splitTemplates: { ...DEFAULT_SPLITS, ...(SPLIT_OVERRIDES.Powerbuilding || {}) }, daySlots: POWERBUILDING_SLOTS, scoring: scoringFor('Powerbuilding') },
-        Minimalist: { name: 'Minimalist', splitTemplates: { ...DEFAULT_SPLITS, ...(SPLIT_OVERRIDES.Minimalist || {}) }, daySlots: MINIMALIST_SLOTS, scoring: scoringFor('Minimalist') }
-    };
-})();
-function generateProgram(config) {
-    var _a, _b, _c;
-    const { experience, days, programType, oneRMs } = config;
-    const daysNum = parseInt(days);
-    // Program profile (drives split + slots + exercise scoring)
-    const profile = PROGRAM_PROFILES[programType] || PROGRAM_PROFILES.Hypertrophy;
-    const split = ((_a = profile.splitTemplates) === null || _a === void 0 ? void 0 : _a[daysNum]) || ((_b = PROGRAM_PROFILES.Hypertrophy.splitTemplates) === null || _b === void 0 ? void 0 : _b[daysNum]) || ((_c = PROGRAM_PROFILES.Hypertrophy.splitTemplates) === null || _c === void 0 ? void 0 : _c[4]);
-    const scoreW = profile.scoring || PROGRAM_PROFILES.Hypertrophy.scoring;
-    // -------------------- Deterministic helpers --------------------
-    const FATIGUE_NUM = { low: 1, medium: 2, high: 3, very_high: 4 };
-    const SKILL_NUM = { low: 1, medium: 2, high: 3, very_high: 4 };
-    const clamp01 = (x) => Math.max(0, Math.min(1, x));
-    const stableId = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
-    function inferSetupCost(eq) {
-        // Setup/time friction heuristics
-        if (!eq)
-            return 2;
-        const e = String(eq).toLowerCase();
-        if (e.includes('barbell'))
-            return 3;
-        if (e.includes('dumbbell'))
-            return 2;
-        if (e.includes('machine') || e.includes('cable'))
-            return 1;
-        return 2;
-    }
-    function inferRomBias(exName, patternKey) {
-        // Conservative heuristic defaults. This is extensible.
-        const n = String(exName || '').toLowerCase();
-        const k = String(patternKey || '').toLowerCase();
-        if (n.includes('romanian') || n.includes('rdl'))
-            return 'lengthened';
-        if (n.includes('incline') && (k.includes('chest') || k.includes('curl') || n.includes('fly')))
-            return 'lengthened';
-        if (n.includes('overhead') && (k.includes('triceps') || n.includes('extension')))
-            return 'lengthened';
-        if (n.includes('fly'))
-            return 'lengthened';
-        if (n.includes('leg curl') || n.includes('hamstring'))
-            return 'lengthened';
-        return 'mid';
-    }
-    // NEW: main-lift identity + stimulus-to-fatigue heuristic (used by program profiles)
-    function inferMainLiftKey(rawName, poolKey, equipment) {
-        const n = String(rawName || '').toLowerCase();
-        const p = String(poolKey || '').toLowerCase();
-        const e = String(equipment || '').toLowerCase();
-        const isBenchish = n.includes('bench') || (p.includes('chest_horizontal') && e.includes('barbell'));
-        const isSquatish = n.includes('squat') || (p.includes('legs_squat') && e.includes('barbell'));
-        const isDeadliftish = n.includes('deadlift') || (p.includes('legs_hinge') && e.includes('barbell'));
-        const isOHPish = n.includes('overhead') || n.includes('ohp') || (p.includes('shoulders_press') && e.includes('barbell'));
-        if (isBenchish)
-            return 'bench';
-        if (isSquatish)
-            return 'squat';
-        if (isDeadliftish)
-            return 'deadlift';
-        if (isOHPish)
-            return 'ohp';
-        return null;
-    }
-    function inferStimulusToFatigue(ex, fatigueNum, skillNum, setupNum) {
-        // Higher is better (rough heuristic for stimulus-to-fatigue / stimulus-to-time efficiency)
-        const eq = String(ex.equipment || '').toLowerCase();
-        const isMachine = eq.includes('machine') || eq.includes('cable');
-        const isBarbell = eq.includes('barbell');
-        let sf = 0.5;
-        if (isMachine)
-            sf += 0.15;
-        if (isBarbell)
-            sf -= 0.05;
-        sf += (3 - fatigueNum) * 0.08;
-        sf += (3 - skillNum) * 0.06;
-        sf += (3 - setupNum) * 0.05;
-        return clamp01(sf);
-    }
-    function normalizeExercise(raw, poolKey) {
-        var _a, _b;
-        const fatigueKey = String(raw.fatigue || '').toLowerCase().trim() || 'medium';
-        const skillKey = String(raw.skill || '').toLowerCase().trim() || 'medium';
-        const equipment = raw.equipment || 'unknown';
-        const fatigueNum = (_a = FATIGUE_NUM[fatigueKey]) !== null && _a !== void 0 ? _a : 2;
-        const skillNum = (_b = SKILL_NUM[skillKey]) !== null && _b !== void 0 ? _b : 2;
-        const setupNum = inferSetupCost(equipment);
-        const mainLiftKey = inferMainLiftKey(raw.name, poolKey, equipment);
-        return {
-            id: stableId(raw.name),
-            name: raw.name,
-            poolKey,
-            type: raw.type || 'compound',
-            primary: raw.primary || raw.primeMover || raw.primaryMuscle || 'unknown',
-            secondary: raw.secondary || [],
-            fatigueNum,
-            skillNum,
-            setupNum,
-            equipment,
-            repRange: raw.repRange || [8, 12],
-            romBias: inferRomBias(raw.name, poolKey),
-            // Profile-aware metadata (used for programType-driven selection)
-            mainLiftKey,
-            isMainLift: !!mainLiftKey,
-            isMachine: String(equipment).toLowerCase().includes('machine') || String(equipment).toLowerCase().includes('cable'),
-            stimulusToFatigue: inferStimulusToFatigue({ equipment }, fatigueNum, skillNum, setupNum),
-            substitutionGroup: poolKey // stimulus-equivalent family
-        };
-    }
-    // Build a unified candidate index from the comprehensive EXERCISE_DATABASE if present.
-    // Fallback: use the lightweight EXERCISE_DB.
-    const SOURCE_DB = (typeof EXERCISE_DATABASE !== 'undefined' && EXERCISE_DATABASE) ? EXERCISE_DATABASE : EXERCISE_DB;
-    function getCandidates(poolKey) {
-        const arr = SOURCE_DB[poolKey];
-        
-        // SAFETY GUARD: Prevent crashes from missing/empty pools
-        if (!arr || !Array.isArray(arr) || arr.length === 0) {
-            console.warn(`⚠️  Empty or missing pool: "${poolKey}" - using fallback exercise`);
-            // Return a generic fallback exercise to prevent crashes
-            return [{
-                id: `fallback_${poolKey}`,
-                name: `Generic ${poolKey.replace(/_/g, ' ')} Exercise`,
-                poolKey,
-                type: poolKey.includes('isolation') ? 'isolation' : 'compound',
-                primary: extractMuscleFromPool(poolKey),
-                secondary: [],
-                fatigueNum: 2,
-                skillNum: 2,
-                setupNum: 2,
-                equipment: 'dumbbell',
-                repRange: [8, 12],
-                romBias: 'mid',
-                mainLiftKey: null,
-                isMainLift: false,
-                isMachine: false,
-                stimulusToFatigue: 0.5,
-                substitutionGroup: poolKey
-            }];
-        }
-        
-        return arr.map(x => normalizeExercise(x, poolKey)).sort((a, b) => a.id.localeCompare(b.id));
+    
+    // Check if block already exists (by name for this user)
+    const { data: existing, error: searchError } = await supabase
+      .from('training_blocks')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('block_name', blockName)
+      .maybeSingle();
+    
+    if (searchError && searchError.code !== 'PGRST116') {
+      throw searchError;
     }
     
-    // Helper function to extract muscle group from pool key
-    function extractMuscleFromPool(poolKey) {
-        if (poolKey.includes('chest')) return 'chest';
-        if (poolKey.includes('back') && poolKey.includes('vertical')) return 'lats';
-        if (poolKey.includes('back')) return 'back';
-        if (poolKey.includes('shoulders') && poolKey.includes('lateral')) return 'side_delts';
-        if (poolKey.includes('shoulders') && poolKey.includes('rear')) return 'rear_delts';
-        if (poolKey.includes('shoulders')) return 'front_delts';
-        if (poolKey.includes('legs') && poolKey.includes('squat')) return 'quads';
-        if (poolKey.includes('legs') && poolKey.includes('hinge')) return 'hamstrings';
-        if (poolKey.includes('legs') && poolKey.includes('quad')) return 'quads';
-        if (poolKey.includes('legs') && poolKey.includes('hamstring')) return 'hamstrings';
-        if (poolKey.includes('legs') && poolKey.includes('glutes')) return 'glutes';
-        if (poolKey.includes('biceps')) return 'biceps';
-        if (poolKey.includes('triceps')) return 'triceps';
-        if (poolKey.includes('calves')) return 'calves';
-        if (poolKey.includes('core')) return 'core';
-        return 'unknown';
+    let result;
+    if (existing?.id) {
+      // Update existing block
+      result = await supabase
+        .from('training_blocks')
+        .update(blockData)
+        .eq('id', existing.id)
+        .select()
+        .single();
+      
+      if (result.error) throw result.error;
+      
+      notify('✅ Training block updated in cloud');
+      console.log('✅ Block updated:', result.data.id);
+    } else {
+      // Insert new block
+      result = await supabase
+        .from('training_blocks')
+        .insert([blockData])
+        .select()
+        .single();
+      
+      if (result.error) throw result.error;
+      
+      notify('✅ Training block saved to cloud');
+      console.log('✅ Block saved:', result.data.id);
+    }
+    
+    // Store cloud ID
+    if (result.data?.id) {
+      localStorage.setItem('liftai_last_cloud_block_id', result.data.id);
+    }
+    
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Cloud sync error:', error);
+    notify('❌ Cloud sync failed: ' + (error.message || 'Unknown error'));
+    return false;
+  }
+}
+
+// Cloud Sync: Pull blocks from cloud and show selection modal
+async function pullBlocksFromCloud() {
+  if (!supabase) {
+    notify('⚠️ Cloud sync not available - please refresh the page');
+    return;
+  }
+  
+  try {
+    notify('☁️ Loading blocks from cloud...');
+    
+    const userId = getAnonymousUserId();
+    
+    const { data: blocks, error } = await supabase
+      .from('training_blocks')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('updated_at', { ascending: false })
+      .limit(20);
+    
+    if (error) throw error;
+    
+    if (!blocks || blocks.length === 0) {
+      notify('📦 No saved blocks found in cloud');
+      return;
+    }
+    
+    console.log(`✅ Found ${blocks.length} blocks in cloud`);
+    
+    // Show selection modal
+    showCloudBlocksModal(blocks);
+    
+  } catch (error) {
+    console.error('❌ Failed to load blocks:', error);
+    notify('❌ Failed to load blocks: ' + (error.message || 'Unknown error'));
+  }
+}
+
+// Show cloud blocks selection modal
+function showCloudBlocksModal(blocks) {
+  const modalContent = `
+    <div style="max-width:600px">
+      <h3 style="margin:0 0 8px 0;font-size:18px">☁️ Saved Training Blocks</h3>
+      <p style="color:var(--text-dim);margin-bottom:20px;font-size:14px">
+        ${blocks.length} block${blocks.length !== 1 ? 's' : ''} found • Click to restore
+      </p>
+      <div style="display:flex;flex-direction:column;gap:12px;max-height:400px;overflow-y:auto;padding-right:8px">
+        ${blocks.map(block => `
+          <div class="cloud-block-card" onclick="restoreBlockFromCloud('${block.id}')" style="
+            padding:16px;
+            background:rgba(59,130,246,0.08);
+            border:1px solid rgba(59,130,246,0.2);
+            border-radius:10px;
+            cursor:pointer;
+            transition:all 0.2s;
+          " onmouseover="this.style.background='rgba(59,130,246,0.15)';this.style.borderColor='rgba(59,130,246,0.4)'" 
+             onmouseout="this.style.background='rgba(59,130,246,0.08)';this.style.borderColor='rgba(59,130,246,0.2)'">
+            <div style="font-weight:600;font-size:15px;margin-bottom:6px">${escapeHtml(block.block_name)}</div>
+            <div style="font-size:13px;color:var(--text-dim);display:flex;flex-wrap:wrap;gap:12px">
+              <span>📅 ${block.block_length} weeks</span>
+              <span>💪 ${block.program_type}</span>
+              <span>🕐 ${formatDate(block.updated_at)}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top:20px;display:flex;gap:10px">
+        <button class="btn secondary" onclick="closeCloudModal()" style="flex:1">Cancel</button>
+      </div>
+    </div>
+  `;
+  
+  // Create modal
+  const modal = document.createElement('div');
+  modal.id = 'cloudBlocksModal';
+  modal.innerHTML = `
+    <div style="
+      position:fixed;
+      top:0;left:0;right:0;bottom:0;
+      background:rgba(0,0,0,0.8);
+      backdrop-filter:blur(4px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:10000;
+      padding:20px;
+      animation:fadeIn 0.2s;
+    " onclick="if(event.target===this) closeCloudModal()">
+      <div style="
+        background:var(--card);
+        border-radius:16px;
+        padding:24px;
+        max-width:95%;
+        max-height:90vh;
+        overflow-y:auto;
+        box-shadow:0 20px 60px rgba(0,0,0,0.5);
+      " onclick="event.stopPropagation()">
+        ${modalContent}
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+// Close cloud blocks modal
+function closeCloudModal() {
+  const modal = document.getElementById('cloudBlocksModal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Restore a specific block from cloud
+async function restoreBlockFromCloud(blockId) {
+  if (!supabase) {
+    notify('⚠️ Cloud sync not available');
+    return false;
+  }
+  
+  try {
+    notify('☁️ Restoring block...');
+    
+    const { data: block, error } = await supabase
+      .from('training_blocks')
+      .select('*')
+      .eq('id', blockId)
+      .single();
+    
+    if (error) throw error;
+    
+    if (!block) {
+      notify('❌ Block not found');
+      return false;
+    }
+    
+    // Restore block data
+    state.currentBlock = block.block_data;
+    
+    // Restore profile data if available
+    if (block.profile_data) {
+      if (block.profile_data.name) state.profile.name = block.profile_data.name;
+      if (block.profile_data.maxes) state.profile.maxes = block.profile_data.maxes;
+      if (block.profile_data.programType) state.profile.programType = block.profile_data.programType;
+      if (block.profile_data.athleteMode) state.profile.athleteMode = block.profile_data.athleteMode;
+      if (block.profile_data.volumePref) state.profile.volumePref = block.profile_data.volumePref;
+      if (block.profile_data.duration) state.profile.duration = block.profile_data.duration;
+      if (block.profile_data.blockLength) state.profile.blockLength = block.profile_data.blockLength;
+      if (block.profile_data.trainingAge) state.profile.trainingAge = block.profile_data.trainingAge;
+      if (block.profile_data.injuries) state.profile.injuries = block.profile_data.injuries;
+    }
+    
+    // Save to localStorage
+    saveState();
+    
+    // Update UI
+    ui.weekIndex = 0;
+    renderDashboard();
+    renderWorkout();
+    renderHistory();
+    
+    // Close modal
+    closeCloudModal();
+    
+    // Show success
+    notify(`✅ Restored: ${block.block_name}`);
+    console.log('✅ Block restored:', block.block_name);
+    
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Restore error:', error);
+    notify('❌ Failed to restore block: ' + (error.message || 'Unknown error'));
+    return false;
+  }
+}
+
+// Helper: Format date for display
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  
+  return date.toLocaleDateString();
+}
+
+// Helper: Escape HTML to prevent XSS
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Auto-sync: Automatically push to cloud after block generation
+function scheduleAutoSync() {
+  if (!supabase || !state.currentBlock) return;
+  
+  // Auto-save after 3 seconds (debounced)
+  clearTimeout(scheduleAutoSync.timer);
+  scheduleAutoSync.timer = setTimeout(() => {
+    console.log('🔄 Auto-syncing to cloud...');
+    pushBlockToCloud();
+  }, 3000);
+}
+
+// Initialize Supabase client (will be loaded from CDN)
+let supabaseClient = null;
+
+// Get or create anonymous user ID
+function getAnonymousUserId() {
+  let userId = localStorage.getItem('liftai_user_id');
+  if (!userId) {
+    userId = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('liftai_user_id', userId);
+  }
+  return userId;
+}
+
+// Initialize Supabase when DOM is ready
+function initializeSupabase() {
+  if (typeof window.supabase !== 'undefined') {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('✅ Supabase initialized');
+  } else {
+    console.warn('⚠️ Supabase SDK not loaded - cloud sync disabled');
+  }
+}
+
+// Cloud Sync: Push current block to Supabase
+async function pushBlockToCloud() {
+  if (!supabaseClient) {
+    notify('⚠️ Cloud sync not available - Supabase not loaded');
+    return false;
+  }
+  
+  if (!state.currentBlock) {
+    notify('⚠️ No training block to sync');
+    return false;
+  }
+  
+  try {
+    const userId = getAnonymousUserId();
+    const blockName = state.currentBlock.name || `Block ${new Date().toLocaleDateString()}`;
+    
+    // Prepare data
+    const blockData = {
+      user_id: userId,
+      block_name: blockName,
+      block_data: state.currentBlock,
+      profile_data: {
+        maxes: state.profile.maxes,
+        preferences: {
+          programType: state.profile.programType,
+          athleteMode: state.profile.athleteMode,
+          volumePref: state.profile.volumePref,
+          duration: state.profile.duration,
+          blockLength: state.profile.blockLength,
+          trainingAge: state.profile.trainingAge,
+          injuries: state.profile.injuries
+        }
+      },
+      block_length: state.currentBlock.weeks?.length || 0,
+      program_type: state.profile.programType || 'general',
+      is_active: true
+    };
+    
+    // Check if block already exists
+    const existingBlock = await supabaseClient
+      .from('training_blocks')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('block_name', blockName)
+      .maybeSingle();
+    
+    let result;
+    if (existingBlock?.data?.id) {
+      // Update existing
+      result = await supabaseClient
+        .from('training_blocks')
+        .update(blockData)
+        .eq('id', existingBlock.data.id)
+        .select()
+        .single();
+      
+      notify('☁️ Training block updated in cloud');
+    } else {
+      // Insert new
+      result = await supabaseClient
+        .from('training_blocks')
+        .insert(blockData)
+        .select()
+        .single();
+      
+      notify('☁️ Training block saved to cloud');
+    }
+    
+    if (result.error) {
+      console.error('Supabase error:', result.error);
+      notify('❌ Cloud sync failed: ' + result.error.message);
+      return false;
+    }
+    
+    // Store the cloud ID in localStorage
+    if (result.data?.id) {
+      localStorage.setItem('liftai_cloud_block_id', result.data.id);
+    }
+    
+    console.log('✅ Block synced to cloud:', result.data);
+    return true;
+    
+  } catch (error) {
+    console.error('Cloud sync error:', error);
+    notify('❌ Cloud sync failed: ' + error.message);
+    return false;
+  }
+}
+
+// Cloud Sync: Pull blocks from Supabase
+async function pullBlocksFromCloud() {
+  if (!supabaseClient) {
+    notify('⚠️ Cloud sync not available - Supabase not loaded');
+    return [];
+  }
+  
+  try {
+    const userId = getAnonymousUserId();
+    
+    const { data, error } = await supabaseClient
+      .from('training_blocks')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('updated_at', { ascending: false });
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      notify('❌ Failed to load blocks from cloud: ' + error.message);
+      return [];
+    }
+    
+    console.log(`✅ Loaded ${data?.length || 0} blocks from cloud`);
+    return data || [];
+    
+  } catch (error) {
+    console.error('Cloud sync error:', error);
+    notify('❌ Failed to load blocks from cloud: ' + error.message);
+    return [];
+  }
+}
+
+// Cloud Sync: Restore a specific block
+async function restoreBlockFromCloud(blockId) {
+  if (!supabaseClient) {
+    notify('⚠️ Cloud sync not available');
+    return false;
+  }
+  
+  try {
+    const { data, error } = await supabaseClient
+      .from('training_blocks')
+      .select('*')
+      .eq('id', blockId)
+      .single();
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      notify('❌ Failed to restore block: ' + error.error);
+      return false;
+    }
+    
+    if (!data) {
+      notify('❌ Block not found');
+      return false;
+    }
+    
+    // Restore the block
+    state.currentBlock = data.block_data;
+    
+    // Restore profile if available
+    if (data.profile_data) {
+      if (data.profile_data.maxes) {
+        state.profile.maxes = data.profile_data.maxes;
+      }
+      if (data.profile_data.preferences) {
+        Object.assign(state.profile, data.profile_data.preferences);
+      }
+    }
+    
+    // Save to localStorage
+    saveState();
+    
+    // Update UI
+    ui.weekIndex = 0;
+    renderDashboard();
+    renderWorkout();
+    renderHistory();
+    
+    notify('✅ Training block restored from cloud');
+    console.log('✅ Block restored:', data.block_name);
+    
+    return true;
+    
+  } catch (error) {
+    console.error('Restore error:', error);
+    notify('❌ Failed to restore block: ' + error.message);
+    return false;
+  }
+}
+
+// Cloud Sync: Show cloud blocks modal
+async function showCloudBlocksModal() {
+  const blocks = await pullBlocksFromCloud();
+  
+  if (blocks.length === 0) {
+    notify('📦 No saved blocks found in cloud');
+    return;
+  }
+  
+  const modalHTML = `
+    <div style="padding:20px">
+      <h3 style="margin-top:0">☁️ Cloud Saved Blocks</h3>
+      <p style="color:var(--text-dim);margin-bottom:20px">
+        ${blocks.length} training block${blocks.length !== 1 ? 's' : ''} found
+      </p>
+      <div style="display:flex;flex-direction:column;gap:12px;max-height:400px;overflow-y:auto">
+        ${blocks.map(block => `
+          <div style="padding:15px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;cursor:pointer"
+               onclick="restoreBlockFromCloud('${block.id}'); closeModal()">
+            <div style="font-weight:600;margin-bottom:5px">${block.block_name}</div>
+            <div style="font-size:13px;color:var(--text-dim)">
+              ${block.block_length} weeks • ${block.program_type}
+              <br>Last updated: ${new Date(block.updated_at).toLocaleString()}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top:20px;display:flex;gap:10px">
+        <button class="btn secondary" onclick="closeModal()" style="flex:1">Cancel</button>
+      </div>
+    </div>
+  `;
+  
+  openModal('Cloud Saved Blocks', '', modalHTML);
+}
+
+function closeModal() {
+  const modalOverlay = document.getElementById('modalOverlay');
+  if (modalOverlay) {
+    modalOverlay.classList.remove('show');
+  }
+}
+
+// Auto-sync: Save to cloud when block changes (debounced)
+let autoSyncTimeout = null;
+function scheduleAutoSync() {
+  if (!supabaseClient) return;
+  
+  clearTimeout(autoSyncTimeout);
+  autoSyncTimeout = setTimeout(() => {
+    if (state.currentBlock) {
+      pushBlockToCloud();
+    }
+  }, 5000); // 5 second delay
+}
+
+// v7.16 STAGE 4: Rest Timer
+let restTimer = {
+  active: false,
+  startTime: null,
+  duration: 180, // 3 minutes default
+  intervalId: null,
+  exerciseKey: null
+};
+
+function startRestTimer(durationSeconds = 180, exerciseKey = '') {
+  // Clear any existing timer
+  stopRestTimer();
+  
+  restTimer = {
+    active: true,
+    startTime: Date.now(),
+    duration: durationSeconds,
+    intervalId: null,
+    exerciseKey
+  };
+  
+  // Update timer display every second
+  restTimer.intervalId = setInterval(() => {
+    updateRestTimerDisplay();
+  }, 1000);
+  
+  updateRestTimerDisplay();
+}
+
+function stopRestTimer() {
+  if (restTimer.intervalId) {
+    clearInterval(restTimer.intervalId);
+  }
+  restTimer.active = false;
+  restTimer.intervalId = null;
+  
+  // Clear all timer displays
+  document.querySelectorAll('[data-rest-timer]').forEach(el => {
+    el.textContent = '';
+    el.style.display = 'none';
+  });
+  
+  // v7.19: Reset all start/cancel buttons
+  document.querySelectorAll('[data-role="startTimer"]').forEach(btn => {
+    btn.style.display = 'block';
+  });
+  document.querySelectorAll('[data-role="cancelTimer"]').forEach(btn => {
+    btn.style.display = 'none';
+  });
+}
+
+function updateRestTimerDisplay() {
+  if (!restTimer.active) return;
+  
+  const elapsed = Math.floor((Date.now() - restTimer.startTime) / 1000);
+  const remaining = Math.max(0, restTimer.duration - elapsed);
+  
+  // Format time
+  const mins = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+  const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+  
+  // Find timer display for this exercise
+  const timerEl = document.querySelector(`[data-rest-timer="${restTimer.exerciseKey}"]`);
+  if (timerEl) {
+    if (remaining > 0) {
+      // Pronounced countdown display
+      timerEl.textContent = `⏱ ${timeStr}`;
+      timerEl.style.display = 'block';
+      
+      if (remaining <= 10) {
+        // Last 10 seconds - RED and urgent
+        timerEl.style.color = '#ef4444';
+        timerEl.style.background = 'rgba(239,68,68,0.15)';
+        timerEl.style.borderColor = 'rgba(239,68,68,0.6)';
+        timerEl.style.fontSize = '24px';
+      } else if (remaining <= 30) {
+        // Last 30 seconds - ORANGE warning
+        timerEl.style.color = '#f59e0b';
+        timerEl.style.background = 'rgba(245,158,11,0.15)';
+        timerEl.style.borderColor = 'rgba(245,158,11,0.5)';
+        timerEl.style.fontSize = '22px';
+      } else {
+        // Normal - BLUE
+        timerEl.style.color = '#3b82f6';
+        timerEl.style.background = 'rgba(59,130,246,0.15)';
+        timerEl.style.borderColor = 'rgba(59,130,246,0.5)';
+        timerEl.style.fontSize = '20px';
+      }
+    } else {
+      // Ready state - GREEN and prominent
+      timerEl.textContent = '✅ READY TO LIFT!';
+      timerEl.style.color = '#10b981';
+      timerEl.style.background = 'rgba(16,185,129,0.2)';
+      timerEl.style.borderColor = 'rgba(16,185,129,0.6)';
+      timerEl.style.fontSize = '24px';
+      
+      // Auto-clear after 5 seconds
+      setTimeout(() => {
+        if (timerEl.textContent === '✅ READY TO LIFT!') {
+          timerEl.textContent = '';
+          timerEl.style.display = 'none';
+        }
+      }, 5000);
+      
+      stopRestTimer();
+    }
+  }
+}
+
+function ensureSetLogs() {
+  if (!state.setLogs) state.setLogs = {};
+  return state.setLogs;
+}
+
+function workoutKey(weekIndex, dayIndex) {
+  return `${state.activeProfile}|w${weekIndex}|d${dayIndex}`;
+}
+
+function ensureExOverrides(dayLog) {
+  if (!dayLog.__exOverrides) dayLog.__exOverrides = {};
+  return dayLog.__exOverrides;
+}
+
+function getWorkSetsOverride(dayLog, exIndex, fallbackSets) {
+  const o = ensureExOverrides(dayLog)[exIndex];
+  const n = o && Number.isFinite(o.workSets) ? o.workSets : fallbackSets;
+  return Math.max(1, Math.floor(n || fallbackSets || 1));
+}
+
+function setWorkSetsOverride(dayLog, exIndex, workSets) {
+  ensureExOverrides(dayLog)[exIndex] = { 
+    ...(ensureExOverrides(dayLog)[exIndex] || {}), 
+    workSets: Math.max(1, Math.floor(workSets || 1)) 
+  };
+}
+
+function getWeightOffsetOverride(dayLog, exIndex) {
+  const o = ensureExOverrides(dayLog)[exIndex];
+  const v = o && Number.isFinite(o.weightOffset) ? o.weightOffset : 0;
+  return clamp(v, -0.10, 0.10);
+}
+
+function setWeightOffsetOverride(dayLog, exIndex, weightOffset) {
+  ensureExOverrides(dayLog)[exIndex] = { 
+    ...(ensureExOverrides(dayLog)[exIndex] || {}), 
+    weightOffset: clamp(Number(weightOffset) || 0, -0.10, 0.10) 
+  };
+}
+
+function actionDelta(action) {
+  switch ((action || '').toLowerCase()) {
+    case 'make': return 0.01;
+    case 'belt': return 0.00;
+    case 'heavy': return -0.02;
+    case 'miss': return -0.05;
+    default: return 0.00;
+  }
+}
+
+const SWAP_POOLS = {
+  snatch: [
+    // Basic Variations
+    { name: 'Snatch', liftKey: 'snatch' },
+    { name: 'Power Snatch', liftKey: 'snatch' },
+    { name: 'Hang Snatch (knee)', liftKey: 'snatch' },
+    { name: 'Hang Power Snatch', liftKey: 'snatch' },
+    { name: 'Block Snatch (knee)', liftKey: 'snatch' },
+    { name: 'Pause Snatch (2s)', liftKey: 'snatch' },
+    { name: 'Snatch from Blocks (mid-thigh)', liftKey: 'snatch' },
+    { name: 'Muscle Snatch', liftKey: 'snatch' },
+    
+    // Technique & Position Complexes
+    { name: 'Snatch High Pull + Hang Snatch + OHS', liftKey: 'snatch' },
+    { name: 'Snatch (pause at knee) + Snatch', liftKey: 'snatch' },
+    { name: 'Hang Snatch (above knee) + Snatch', liftKey: 'snatch' },
+    { name: 'Snatch + OHS (pause)', liftKey: 'snatch' },
+    { name: 'Muscle Snatch + OHS', liftKey: 'snatch' },
+    { name: 'Tall Snatch + Snatch', liftKey: 'snatch' },
+    { name: 'Low Hang Snatch + Hang Snatch + Snatch', liftKey: 'snatch' },
+    { name: 'Hip Snatch + Hang Snatch + Snatch', liftKey: 'snatch' },
+    { name: 'Snatch Balance + OHS', liftKey: 'snatch' },
+    
+    // Pull-to-Catch Complexes
+    { name: 'Snatch Pull + Snatch', liftKey: 'snatch' },
+    { name: 'Snatch Pull + Hang Snatch + Snatch', liftKey: 'snatch' },
+    { name: 'Snatch High Pull + Snatch', liftKey: 'snatch' },
+    { name: 'Segment Snatch Pull + Snatch', liftKey: 'snatch' },
+    { name: 'Halting Snatch Deadlift + Snatch Pull + Snatch', liftKey: 'snatch' },
+    
+    // Competition & Rehearsal
+    { name: 'Snatch + Snatch (1+1)', liftKey: 'snatch' },
+    { name: 'Power Snatch + Snatch', liftKey: 'snatch' },
+    { name: 'Block Snatch + Snatch', liftKey: 'snatch' }
+  ],
+  cj: [
+    // Basic Variations
+    { name: 'Clean & Jerk', liftKey: 'cj' },
+    { name: 'Power Clean + Jerk', liftKey: 'cj' },
+    { name: 'Hang Clean (knee) + Jerk', liftKey: 'cj' },
+    { name: 'Clean + Push Jerk', liftKey: 'cj' },
+    { name: 'Clean + Power Jerk', liftKey: 'cj' },
+    { name: 'Block Clean (knee) + Jerk', liftKey: 'cj' },
+    { name: 'Power Jerk from Rack', liftKey: 'cj' },
+    { name: 'Hang Power Clean + Jerk', liftKey: 'cj' },
+    
+    // Clean Technique & Position Complexes
+    { name: 'Clean Pull + Hang Clean + Front Squat', liftKey: 'cj' },
+    { name: 'Clean (pause at knee) + Clean', liftKey: 'cj' },
+    { name: 'Hang Clean (above knee) + Clean', liftKey: 'cj' },
+    { name: 'Tall Clean + Clean', liftKey: 'cj' },
+    { name: 'Low Hang Clean + Hang Clean + Clean', liftKey: 'cj' },
+    { name: 'Hip Clean + Hang Clean + Clean', liftKey: 'cj' },
+    
+    // Clean Strength-in-Lift Complexes
+    { name: 'Clean + Front Squat', liftKey: 'cj' },
+    { name: 'Clean + Front Squat + Clean', liftKey: 'cj' },
+    { name: 'Clean + Front Squat (2 reps)', liftKey: 'cj' },
+    { name: 'Clean + Front Squat + Jerk', liftKey: 'cj' },
+    { name: 'Clean Pull + Clean + Front Squat', liftKey: 'cj' },
+    
+    // Jerk Complexes
+    { name: 'Jerk Dip Squat (pause) + Jerk', liftKey: 'cj' },
+    { name: 'Power Jerk + Split Jerk', liftKey: 'cj' },
+    { name: 'Pause Jerk + Jerk', liftKey: 'cj' },
+    { name: 'Split Jerk + Jerk Balance', liftKey: 'cj' },
+    { name: 'Jerk from Blocks + Jerk', liftKey: 'cj' },
+    { name: 'Clean + Jerk + Jerk', liftKey: 'cj' },
+    
+    // Competition & Rehearsal
+    { name: 'Clean + Jerk (1+1)', liftKey: 'cj' },
+    { name: 'Power Clean + Clean + Jerk', liftKey: 'cj' },
+    { name: 'Block Clean + Clean + Jerk', liftKey: 'cj' },
+    { name: 'Tempo Clean (3s) + Clean', liftKey: 'cj' }
+  ],
+  pull_snatch: [
+    { name: 'Snatch Pull', liftKey: 'snatch' },
+    { name: 'Snatch High Pull', liftKey: 'snatch' },
+    { name: 'Deficit Snatch Pull', liftKey: 'snatch' },
+    { name: 'Halting Snatch Pull', liftKey: 'snatch' }
+  ],
+  pull_clean: [
+    { name: 'Clean Pull', liftKey: 'cj' },
+    { name: 'Clean High Pull', liftKey: 'cj' },
+    { name: 'Deficit Clean Pull', liftKey: 'cj' },
+    { name: 'Halting Clean Pull', liftKey: 'cj' }
+  ],
+  bs: [
+    { name: 'Back Squat', liftKey: 'bs' },
+    { name: 'Pause Back Squat', liftKey: 'bs' },
+    { name: 'Tempo Back Squat', liftKey: 'bs' }
+  ],
+  fs: [
+    { name: 'Front Squat', liftKey: 'fs' },
+    { name: 'Pause Front Squat', liftKey: 'fs' },
+    { name: 'Tempo Front Squat', liftKey: 'fs' }
+  ],
+  press: [
+    { name: 'Push Press', liftKey: 'pushPress' },
+    { name: 'Strict Press', liftKey: 'strictPress' },
+    { name: 'Behind-the-Neck Push Press', liftKey: 'pushPress' },
+    { name: 'Jerk Dip + Drive', liftKey: 'cj' }
+  ],
+  accessory: [
+    { name: 'RDL', liftKey: 'bs', recommendedPct: 0.60, description: '~60% of Back Squat' },
+    { name: 'Good Morning', liftKey: 'bs', recommendedPct: 0.50, description: '~50% of Back Squat' },
+    { name: 'Bulgarian Split Squat', liftKey: 'bs', recommendedPct: 0.55, description: '~55% of Back Squat' },
+    { name: 'Row', liftKey: 'bs', recommendedPct: 0.30, description: '~30% of Back Squat' },
+    { name: 'Pull-up', liftKey: '', recommendedPct: 0, description: 'Bodyweight or add load' },
+    { name: 'Plank', liftKey: '', recommendedPct: 0, description: 'Bodyweight hold' },
+    { name: 'Back Extension', liftKey: 'bs', recommendedPct: 0.40, description: '~40% of Back Squat' }
+  ]
+};
+
+// v7.27: COMPREHENSIVE ACCESSORY EXERCISE DATABASE - ALL EXERCISES MAPPED
+const ACCESSORY_DATABASE = {
+  back_vertical: [
+    'Pull-up', 'Pull-ups', 'Weighted Pull-up', 'Weighted Pull-ups',
+    'Chin-up', 'Chin-ups', 
+    'Lat Pulldown', 'Wide-Grip Lat Pulldown', 'Close-Grip Lat Pulldown'
+  ],
+  back_horizontal: [
+    'Barbell Row', 'Pendlay Row', 'T-Bar Row', 
+    'Dumbbell Row', 'Single-Arm Row', 'Single-Arm Dumbbell Row',
+    'Chest-Supported Row', 'Seated Cable Row', 'Cable Row', 'Machine Row', 
+    'TRX Row', 'Row', 'Back Extension'
+  ],
+  shoulders_press: [
+    'Overhead Press', 'Seated Dumbbell Press', 'Standing Dumbbell Press',
+    'Overhead Dumbbell Press', 'Arnold Press', 'Machine Shoulder Press',
+    'Landmine Press'
+  ],
+  shoulders_lateral: [
+    'Dumbbell Lateral Raise', 'Cable Lateral Raise', 'Machine Lateral Raise',
+    'Leaning Cable Lateral Raise', 'Lateral Raise', 'Front Raise'
+  ],
+  shoulders_rear: [
+    'Face Pull', 'Reverse Pec Deck', 'Bent-Over Dumbbell Fly',
+    'Cable Rear Delt Fly', 'Rear Delt Row', 'Rear Delt Fly'
+  ],
+  chest_press: [
+    'Barbell Bench Press', 'Incline Barbell Bench Press', 'Dumbbell Bench Press',
+    'Incline Dumbbell Press', 'Weighted Dips', 'Bodyweight Dips',
+    'Machine Chest Press', 'Dips', 'Close-Grip Push-up'
+  ],
+  chest_isolation: [
+    'Cable Flyes', 'Dumbbell Flyes', 'Pec Deck Machine', 'Incline Cable Flyes'
+  ],
+  legs_quad: [
+    'Leg Extension', 'Single-Leg Extension', 'Leg Press',
+    'Hack Squat Machine', 'Bulgarian Split Squat'
+  ],
+  legs_hamstring: [
+    'Leg Curl', 'Seated Leg Curl', 'Lying Leg Curl', 'Nordic Curl',
+    'Romanian Deadlift', 'RDL', 'Dumbbell Romanian Deadlift', 'Good Morning'
+  ],
+  legs_glutes: [
+    'Hip Thrust', 'Barbell Glute Bridge', 'Glute Bridge', 'Cable Pull-Through'
+  ],
+  legs_calves: [
+    'Standing Calf Raise', 'Seated Calf Raise', 'Leg Press Calf Raise', 'Calf Raises'
+  ],
+  arms_biceps: [
+    'Barbell Curl', 'EZ-Bar Curl', 'Dumbbell Curl', 'Hammer Curl',
+    'Incline Dumbbell Curl', 'Cable Curl', 'Preacher Curl'
+  ],
+  arms_triceps: [
+    'Close-Grip Bench Press', 'Dumbbell Overhead Extension',
+    'Cable Tricep Pushdown', 'Rope Tricep Pushdown', 'Tricep Pushdown',
+    'Overhead Cable Extension', 'Skull Crusher', 'Rope Tricep Extension', 'Tricep Extension'
+  ],
+  core: [
+    'Plank', 'Ab Wheel Rollout', 'Cable Crunch', 'Pallof Press',
+    'Side Plank', 'Core + Mobility', 'Core Circuit'
+  ]
+};
+
+// v7.25: Map exercises to categories for intelligent swapping
+const EXERCISE_CATEGORIES = {
+  // BACK - Vertical Pull (Lats)
+  'Lat Pulldown': 'back_vertical', 'Wide-Grip Lat Pulldown': 'back_vertical', 'Close-Grip Lat Pulldown': 'back_vertical',
+  'Pull-ups': 'back_vertical', 'Pull-up': 'back_vertical', 
+  'Weighted Pull-ups': 'back_vertical', 'Weighted Pull-up': 'back_vertical',
+  'Chin-ups': 'back_vertical', 'Chin-up': 'back_vertical',
+  
+  // BACK - Horizontal Pull (Mid-back, Traps)
+  'Barbell Row': 'back_horizontal', 'Pendlay Row': 'back_horizontal', 'T-Bar Row': 'back_horizontal',
+  'Dumbbell Row': 'back_horizontal', 'Chest-Supported Row': 'back_horizontal', 
+  'Seated Cable Row': 'back_horizontal', 'Machine Row': 'back_horizontal',
+  'Row': 'back_horizontal', 'Cable Row': 'back_horizontal', 
+  'Single-Arm Row': 'back_horizontal', 'Single-Arm Dumbbell Row': 'back_horizontal', 'TRX Row': 'back_horizontal',
+  'Back Extension': 'back_horizontal',
+  
+  // SHOULDERS - Press
+  'Overhead Press': 'shoulders_press', 'Seated Dumbbell Press': 'shoulders_press', 
+  'Standing Dumbbell Press': 'shoulders_press', 'Arnold Press': 'shoulders_press',
+  'Overhead Dumbbell Press': 'shoulders_press', 'Machine Shoulder Press': 'shoulders_press',
+  'Landmine Press': 'shoulders_press',
+  
+  // SHOULDERS - Lateral Delts
+  'Dumbbell Lateral Raise': 'shoulders_lateral', 'Cable Lateral Raise': 'shoulders_lateral', 
+  'Machine Lateral Raise': 'shoulders_lateral', 'Leaning Cable Lateral Raise': 'shoulders_lateral',
+  'Lateral Raise': 'shoulders_lateral', 'Front Raise': 'shoulders_lateral',
+  
+  // SHOULDERS - Rear Delts
+  'Face Pull': 'shoulders_rear', 'Reverse Pec Deck': 'shoulders_rear', 
+  'Bent-Over Dumbbell Fly': 'shoulders_rear', 'Cable Rear Delt Fly': 'shoulders_rear', 
+  'Rear Delt Row': 'shoulders_rear', 'Rear Delt Fly': 'shoulders_rear',
+  
+  // CHEST - Press
+  'Barbell Bench Press': 'chest_press', 'Incline Barbell Bench Press': 'chest_press',
+  'Dumbbell Bench Press': 'chest_press', 'Incline Dumbbell Press': 'chest_press',
+  'Weighted Dips': 'chest_press', 'Bodyweight Dips': 'chest_press', 
+  'Machine Chest Press': 'chest_press', 'Dips': 'chest_press',
+  'Close-Grip Push-up': 'chest_press',
+  
+  // CHEST - Isolation
+  'Cable Flyes': 'chest_isolation', 'Dumbbell Flyes': 'chest_isolation', 
+  'Pec Deck Machine': 'chest_isolation', 'Incline Cable Flyes': 'chest_isolation',
+  
+  // LEGS - Quads
+  'Leg Extension': 'legs_quad', 'Single-Leg Extension': 'legs_quad', 
+  'Leg Press': 'legs_quad', 'Hack Squat Machine': 'legs_quad', 
+  'Bulgarian Split Squat': 'legs_quad',
+  
+  // LEGS - Hamstrings
+  'Leg Curl': 'legs_hamstring', 'Seated Leg Curl': 'legs_hamstring', 
+  'Lying Leg Curl': 'legs_hamstring', 'Nordic Curl': 'legs_hamstring',
+  'Romanian Deadlift': 'legs_hamstring', 'Dumbbell Romanian Deadlift': 'legs_hamstring',
+  'RDL': 'legs_hamstring', 'Good Morning': 'legs_hamstring',
+  
+  // LEGS - Glutes
+  'Hip Thrust': 'legs_glutes', 'Barbell Glute Bridge': 'legs_glutes', 
+  'Cable Pull-Through': 'legs_glutes', 'Glute Bridge': 'legs_glutes',
+  
+  // LEGS - Calves
+  'Standing Calf Raise': 'legs_calves', 'Seated Calf Raise': 'legs_calves', 
+  'Leg Press Calf Raise': 'legs_calves', 'Calf Raises': 'legs_calves',
+  
+  // ARMS - Biceps
+  'Barbell Curl': 'arms_biceps', 'EZ-Bar Curl': 'arms_biceps', 
+  'Dumbbell Curl': 'arms_biceps', 'Hammer Curl': 'arms_biceps',
+  'Incline Dumbbell Curl': 'arms_biceps', 'Cable Curl': 'arms_biceps', 
+  'Preacher Curl': 'arms_biceps',
+  
+  // ARMS - Triceps
+  'Close-Grip Bench Press': 'arms_triceps', 'Dumbbell Overhead Extension': 'arms_triceps',
+  'Cable Tricep Pushdown': 'arms_triceps', 'Rope Tricep Pushdown': 'arms_triceps',
+  'Overhead Cable Extension': 'arms_triceps', 'Skull Crusher': 'arms_triceps',
+  'Tricep Pushdown': 'arms_triceps', 'Rope Tricep Extension': 'arms_triceps', 'Tricep Extension': 'arms_triceps',
+  
+  // CORE
+  'Plank': 'core', 'Ab Wheel Rollout': 'core', 'Cable Crunch': 'core', 
+  'Pallof Press': 'core', 'Side Plank': 'core', 
+  'Core + Mobility': 'core', 'Core Circuit': 'core'
+};
+
+function inferSwapFamily(exName, liftKey) {
+  const n = String(exName || '').toLowerCase();
+  const lk = String(liftKey || '').toLowerCase();
+  if (n.includes('pull')) return (lk === 'snatch') ? 'pull_snatch' : 'pull_clean';
+  if (n.includes('squat')) return (n.includes('front') || lk === 'fs') ? 'fs' : 'bs';
+  if (n.includes('press') || n.includes('jerk dip')) return 'press';
+  if (n.includes('snatch')) return 'snatch';
+  if (n.includes('clean') || n.includes('jerk')) return 'cj';
+  return 'accessory';
+}
+
+function getSwapOptionsForExercise(ex, dayPlan) {
+  const lk = ex.liftKey || dayPlan.liftKey || '';
+  const family = inferSwapFamily(ex.name, lk);
+  
+  // v7.25: Check if this is an accessory exercise with a category
+  const category = EXERCISE_CATEGORIES[ex.name];
+  
+  // DEBUG: Log what we found
+  console.log('🔍 Swap lookup for:', ex.name);
+  console.log('   Category found:', category);
+  console.log('   Has database:', category && ACCESSORY_DATABASE[category] ? 'YES' : 'NO');
+  
+  let pool = [];
+  
+  if (category && ACCESSORY_DATABASE[category]) {
+    // Use accessory database for recognized exercises
+    pool = ACCESSORY_DATABASE[category].map(name => ({ name, liftKey: '' }));
+    console.log('   ✅ Using accessory database, pool size:', pool.length);
+  } else if (SWAP_POOLS[family]) {
+    // Use Olympic lift pools for comp lifts
+    pool = [...SWAP_POOLS[family]];
+    console.log('   ⚠️ Using Olympic lift pools (family:', family + ')');
+  }
+  
+  // Ensure current exercise is in the list
+  if (!pool.some(o => o.name === ex.name)) {
+    pool.unshift({ name: ex.name, liftKey: lk });
+  }
+  
+  // Remove duplicates
+  const uniq = [];
+  pool.forEach(o => {
+    if (!uniq.some(u => u.name === o.name)) uniq.push(o);
+  });
+  
+  // Move current exercise to top
+  const currentIdx = uniq.findIndex(o => o.name === ex.name);
+  if (currentIdx > 0) {
+    const cur = uniq.splice(currentIdx, 1)[0];
+    uniq.unshift(cur);
+  }
+  
+  return uniq;
+}
+
+function clearExerciseLogs(dayLog, exIndex) {
+  Object.keys(dayLog).forEach((k) => {
+    if (k.startsWith(`${exIndex}:`)) delete dayLog[k];
+  });
+  if (dayLog.__exOverrides && dayLog.__exOverrides[exIndex]) {
+    delete dayLog.__exOverrides[exIndex];
+  }
+}
+
+window.closeModal = function closeModal() {
+  const o = $('modalOverlay');
+  if (o) o.classList.remove('show');
+};
+
+window.openModal = function openModal(title, subtitle, html) {
+  const o = $('modalOverlay');
+  if (!o) return;
+  const t = $('modalTitle');
+  const s = $('modalSubtitle');
+  const c = $('modalContent');
+  if (t) t.textContent = title || 'Info';
+  if (s) s.textContent = subtitle || '';
+  if (c) c.innerHTML = html || '';
+  o.classList.add('show');
+};
+
+window.closeReadinessModal = function closeReadinessModal() {
+  const o = $('readinessOverlay');
+  if (o) o.classList.remove('show');
+};
+
+window.saveReadinessCheck = function saveReadinessCheck() {
+  const p = getProfile();
+  const sleep = Number($('sleepSlider')?.value || 7);
+  const quality = Number($('sleepQualityValue')?.textContent || 3);
+  const stress = Number($('stressValue')?.textContent || 3);
+  const soreness = Number($('sorenessValue')?.textContent || 3);
+  const readiness = Number($('readinessValueDisplay')?.textContent || 3);
+  const score = ((sleep/2) + quality + (6-stress) + (6-soreness) + readiness) / 5;
+  const scoreRounded = Math.round(score * 10) / 10;
+  p.readinessLog = p.readinessLog || [];
+  p.readinessLog.push({ 
+    date: todayISO(), 
+    score: scoreRounded,
+    sleep, quality, stress, soreness, readiness,
+    notes: 'Pre-workout check' 
+  });
+  saveState();
+  window.closeReadinessModal();
+  notify('Readiness logged: ' + scoreRounded.toFixed(1) + '/5.0');
+};
+
+window.showInfo = function showInfo(topic) {
+  openModal('Info', topic, `<div class="help">More info coming soon for: ${topic}</div>`);
+};
+
+// Clear optional 1RM field to use auto-calculated value
+window.clearOptional1RM = function clearOptional1RM(fieldId) {
+  const field = $(fieldId);
+  if (field) {
+    field.value = '';
+    updateAutoCalcDisplays();
+  }
+};
+
+// Update auto-calculated displays based on main lift values
+window.updateAutoCalcDisplays = function updateAutoCalcDisplays() {
+  const sn = Number($('setupSnatch')?.value) || 0;
+  const cj = Number($('setupCleanJerk')?.value) || 0;
+  
+  const ratios = {
+    'setupPowerSnatch': { base: sn, ratio: 0.88, name: 'Power Snatch' },
+    'setupPowerClean': { base: cj, ratio: 0.90, name: 'Power Clean' },
+    'setupOHS': { base: sn, ratio: 0.85, name: 'Overhead Squat' },
+    'setupHangSnatch': { base: sn, ratio: 0.95, name: 'Hang Snatch' },
+    'setupHangPowerSnatch': { base: sn, ratio: 0.80, name: 'Hang Power Snatch' },
+    'setupHangClean': { base: cj, ratio: 0.95, name: 'Hang Clean' }
+  };
+  
+  for (const [fieldId, config] of Object.entries(ratios)) {
+    const field = $(fieldId);
+    const displayId = 'autoCalc' + fieldId.replace('setup', '');
+    const display = $(displayId);
+    
+    if (field && display && config.base > 0) {
+      const autoValue = roundTo(config.base * config.ratio, 1);
+      const hasCustom = field.value && Number(field.value) > 0;
+      
+      if (hasCustom) {
+        display.innerHTML = `<span style="color:var(--primary)">✓ Using custom: ${field.value} kg</span> <span style="color:var(--text-dim)">(Auto would be: ${autoValue} kg)</span>`;
+      } else {
+        display.innerHTML = `<span style="color:var(--text-dim)">Auto: ${autoValue} kg (${Math.round(config.ratio * 100)}% of base lift)</span>`;
+      }
+    }
+  }
+};
+
+window.showInfo = function showInfo(topic) {
+  const MAP = {
+    profile: 'Profiles store all settings locally.',
+    units: 'Choose kg or lb. Loads rounded accordingly.',
+    blocklength: 'Block length: how many weeks generated.',
+    programtype: 'Different emphasis: General, Strength, Hypertrophy, Competition.',
+    transition: 'Ramp-in period gradually increases intensity.',
+    preferences: 'Presets adjust training stress.',
+    athletemode: 'Recreational or Competition mode.',
+    blocks: 'Block variations require lifting blocks.',
+    volume: 'Standard/Reduced/Minimal sets.',
+    autocut: 'Suggests cutting sets if fatigue spikes.',
+    restduration: 'Default rest time between sets. Heavy lifts (85%+) automatically use 5 minutes.',
+    aicoach: 'AI features placeholder.',
+    hfmodel: 'AI model name storage.',
+    aitest: 'AI testing disabled.',
+    maxes: 'Enter best recent 1RMs. Working maxes at 90%.',
+    maindays: 'Select Olympic lift training days.',
+    accessorydays: 'Select accessory work days.',
+    duration: 'Average session time.',
+    athletedetails: 'Optional personalization.',
+    trainingage: 'How long training Olympic lifts.',
+    recovery: 'Recovery capacity between sessions.',
+    limiter: 'Primary weakness to address.',
+    meetplanning: 'Competition date for periodization.',
+    macroperiod: 'Training cycle phase.',
+    taper: 'Pre-competition volume reduction.',
+    heavysingle: 'Include heavy singles (90%+).',
+    injuries: 'Active injuries to work around.'
+  };
+  alert(MAP[topic] || 'Info about ' + topic);
+};
+
+const STORAGE_KEY = 'liftai_v7_fully_fixed';
+
+const DEFAULT_PROFILE = () => ({
+  name: 'Default',
+  units: 'kg',
+  blockLength: 8,
+  programType: 'general',
+  transitionWeeks: 1,
+  transitionProfile: 'standard',
+  prefPreset: 'balanced',
+  athleteMode: 'recreational',
+  includeBlocks: true,
+  volumePref: 'reduced',
+  duration: 75, // Session duration in minutes
+  restDuration: 180, // Default rest timer duration in seconds (v7.19)
+  autoCut: true,
+  age: null,
+  trainingAge: 1,
+  recovery: 3,
+  limiter: 'balanced',
+  competitionDate: null,
+  macroPeriod: 'AUTO',
+  taperStyle: 'default',
+  heavySingleExposure: 'off',
+  injuries: [],
+  mainDays: [2, 4, 6],
+  accessoryDays: [7],
+  aiEnabled: true,
+  aiModel: '',
+  maxes: { 
+    snatch: 80, 
+    cj: 100, 
+    fs: 130, 
+    bs: 150, 
+    pushPress: 0, 
+    strictPress: 0,
+    // Optional custom 1RMs (null = use auto-calculated ratio)
+    powerSnatch: null,
+    powerClean: null,
+    ohs: null,
+    hangPowerSnatch: null,
+    hangSnatch: null
+  },
+  workingMaxes: { snatch: 72, cj: 90, fs: 117, bs: 135, pushPress: 0, strictPress: 0 },
+  liftAdjustments: { snatch: 0, cj: 0, fs: 0, bs: 0, pushPress: 0, strictPress: 0 },
+  readinessLog: [],
+  // v7.28: Store user's actual accessory weights to recall later
+  accessoryWeights: {} // { 'Barbell Bench Press': 47, 'T-Bar Row': 75, ... }
+});
+
+const DEFAULT_STATE = () => ({
+  version: 'fully_fixed_v1',
+  activeProfile: 'Default',
+  profiles: { Default: DEFAULT_PROFILE() },
+  currentBlock: null,
+  history: [],
+  setLogs: {},
+  workoutReadiness: {}, // v7.33: Per-workout readiness scores
+  blockHistory: [] // v7.24: Store completed blocks
+});
+
+let state = loadState();
+let ui = { currentPage: 'Setup', weekIndex: 0 };
+
+/**
+ * Calculate appropriate pull percentage offset based on phase and lift type
+ * Research: Catalyst Athletics, USAW, Soviet methodology, Torokhtiy programs
+ * 
+ * Olympic lifting pulls should be prescribed as percentages of the competition lift,
+ * with the offset varying by training phase:
+ * 
+ * ACCUMULATION: Lighter pulls (volume, technique focus)
+ * - Snatch Pulls: +5% (70-80% of Snatch)
+ * - Clean Pulls: +8% (75-85% of Clean/C&J)
+ * 
+ * INTENSIFICATION: Heavier pulls (strength development)
+ * - Snatch Pulls: +10% (85-95% of Snatch)
+ * - Clean Pulls: +15% (90-100% of Clean/C&J)
+ * 
+ * COMPETITION: Moderate pulls (peak performance, maintenance)
+ * - Snatch Pulls: +8% (88-98% of Snatch)
+ * - Clean Pulls: +12% (92-102% of Clean/C&J)
+ * 
+ * @param {string} phase - Training phase (accumulation, intensification, competition)
+ * @param {string} pullType - 'snatch' or 'clean'
+ * @returns {number} Percentage offset to add to base intensity
+ */
+function getPullOffset(phase, pullType) {
+  // Snatch pulls are generally lighter (more technique-limited)
+  // Clean pulls can be heavier (more strength-limited)
+  
+  if (phase === 'accumulation') {
+    // Focus: Volume, technique, position
+    // Research range: Snatch 70-80%, Clean 75-85%
+    return pullType === 'snatch' ? 0.05 : 0.08;
+  } 
+  else if (phase === 'intensification') {
+    // Focus: Strength development
+    // Research range: Snatch 85-95%, Clean 90-100%
+    return pullType === 'snatch' ? 0.10 : 0.15;
+  } 
+  else if (phase === 'competition' || phase === 'peaking') {
+    // Focus: Peak performance, maintenance
+    // Research range: Snatch 88-98%, Clean 92-102%
+    return pullType === 'snatch' ? 0.08 : 0.12;
+  }
+  
+  // Default fallback for unknown phases
+  return pullType === 'snatch' ? 0.08 : 0.10;
+}
+
+function loadState() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  const parsed = raw ? safeJsonParse(raw, null) : null;
+  if (!parsed || typeof parsed !== 'object') return DEFAULT_STATE();
+  const s = Object.assign(DEFAULT_STATE(), parsed);
+  if (!s.profiles || typeof s.profiles !== 'object') {
+    s.profiles = { Default: DEFAULT_PROFILE() };
+  }
+  if (!s.activeProfile || !s.profiles[s.activeProfile]) {
+    s.activeProfile = Object.keys(s.profiles)[0] || 'Default';
+  }
+  Object.keys(s.profiles).forEach(profileName => {
+    const p = s.profiles[profileName];
+    const defaults = DEFAULT_PROFILE();
+    Object.keys(defaults).forEach(key => {
+      if (!(key in p)) p[key] = defaults[key];
+    });
+  });
+  return s;
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function getProfile() {
+  const p = state.profiles[state.activeProfile];
+  if (!p) {
+    state.profiles.Default = state.profiles.Default || DEFAULT_PROFILE();
+    state.activeProfile = 'Default';
+    saveState();
+    return state.profiles.Default;
+  }
+  return p;
+}
+
+function setActiveProfile(name) {
+  if (!state.profiles[name]) return;
+  state.activeProfile = name;
+  saveState();
+}
+
+const PAGES = {
+  Setup: 'pageSetup',
+  Dashboard: 'pageDashboard',
+  Workout: 'pageWorkout',
+  History: 'pageHistory',
+  Settings: 'pageSettings'
+};
+
+function showPage(pageName) {
+  ui.currentPage = pageName;
+  for (const [name, id] of Object.entries(PAGES)) {
+    const el = $(id);
+    if (!el) continue;
+    if (name === pageName) el.classList.remove('hidden');
+    else el.classList.add('hidden');
+  }
+  const navMap = {
+    Setup: 'navSetup',
+    Dashboard: 'navDashboard',
+    Workout: 'navWorkout',
+    History: 'navHistory',
+    Settings: 'navSettings'
+  };
+  for (const [name, btnId] of Object.entries(navMap)) {
+    const b = $(btnId);
+    if (!b) continue;
+    b.classList.toggle('active', name === pageName);
+  }
+  if (pageName === 'Setup') renderSetup();
+  if (pageName === 'Dashboard') renderDashboard();
+  if (pageName === 'Workout') renderWorkout();
+  if (pageName === 'History') renderHistory();
+  if (pageName === 'Settings') renderSettings();
+}
+
+function computeWorkingMaxes(maxes) {
+  return {
+    snatch: roundTo((Number(maxes.snatch) || 0) * 0.9, 1),
+    cj: roundTo((Number(maxes.cj) || 0) * 0.9, 1),
+    fs: roundTo((Number(maxes.fs) || 0) * 0.9, 1),
+    bs: roundTo((Number(maxes.bs) || 0) * 0.9, 1),
+    pushPress: roundTo((Number(maxes.pushPress) || 0) * 0.9, 1),
+    strictPress: roundTo((Number(maxes.strictPress) || 0) * 0.9, 1)
+  };
+}
+
+// v7.44 ELITE SYSTEM #1: ADVANCED MACRO-PERIODIZATION (STEP-LOADING)
+// Implements 3-weeks-up, 1-week-down mesocycles for 8-12 week blocks
+function phaseForWeek(weekIndex, blockLength = 8) {
+  // Step-loading mesocycle: 3 weeks loading, 1 week deload
+  const mesocycleWeek = weekIndex % 4; // Position within mesocycle (0-3)
+  
+  if (mesocycleWeek === 3) {
+    // Week 4 of each mesocycle: MINI-DELOAD
+    return 'deload';
+  } else if (mesocycleWeek === 0 || mesocycleWeek === 1) {
+    // Weeks 1-2: ACCUMULATION (volume emphasis)
+    return 'accumulation';
+  } else {
+    // Week 3: INTENSIFICATION (peak week before deload)
+    return 'intensification';
+  }
+}
+
+// v7.44 ELITE: Step-loading volume progression
+function getStepLoadingMultiplier(weekIndex, phase) {
+  const mesocycleWeek = weekIndex % 4;
+  const mesocycleNumber = Math.floor(weekIndex / 4); // 0, 1, 2... (which mesocycle)
+  
+  // Base progression within mesocycle
+  let volumeMultiplier = 1.0;
+  
+  if (phase === 'deload') {
+    // Week 4: -20% volume
+    volumeMultiplier = 0.80;
+  } else if (phase === 'accumulation') {
+    // Weeks 1-2: Standard volume
+    volumeMultiplier = mesocycleWeek === 0 ? 1.0 : 1.05; // Week 2 slightly higher
+  } else if (phase === 'intensification') {
+    // Week 3: +10% volume (peak before deload)
+    volumeMultiplier = 1.10;
+  }
+  
+  // Progressive overload across mesocycles: +2.5% per cycle
+  const mesocycleBonus = mesocycleNumber * 0.025;
+  
+  return volumeMultiplier * (1 + mesocycleBonus);
+}
+
+// v7.44 ELITE: Step-loading intensity progression
+function getStepLoadingIntensity(weekIndex, phase, baseIntensity, experienceLevel) {
+  const mesocycleWeek = weekIndex % 4;
+  const mesocycleNumber = Math.floor(weekIndex / 4);
+  
+  // Intensity caps based on experience
+  const intensityCap = experienceLevel === 'advanced' ? 0.95 : 
+                       experienceLevel === 'intermediate' ? 0.92 : 0.88;
+  
+  let intensity = baseIntensity;
+  
+  if (phase === 'deload') {
+    // Week 4: -10% intensity
+    intensity = baseIntensity * 0.90;
+  } else if (phase === 'intensification') {
+    // Week 3: Peak intensity
+    intensity = baseIntensity * 1.05;
+  }
+  
+  // Progressive overload: Each mesocycle starts 2.5% higher than previous
+  intensity += (mesocycleNumber * 0.025);
+  
+  // Apply experience-based cap
+  intensity = Math.min(intensity, intensityCap);
+  
+  return intensity;
+}
+
+function volumeFactorFor(profile, phase, weekIndex = 0) {
+  // v7.44 ELITE: Base volume from user preference
+  const pref = profile.volumePref || 'reduced';
+  let base = 1.0;
+  
+  if (pref === 'minimal') {
+    base = 0.7; // Low volume: -1 set from accessories
+  } else if (pref === 'reduced') {
+    base = 0.85; // Standard reduced
+  } else if (pref === 'standard') {
+    base = 1.0; // Full volume
+  } else if (pref === 'high') {
+    base = 1.15; // High volume: +1 set to accessories, +1 rep to primary
+  }
+  
+  // v7.44 ELITE: Step-loading mesocycle multiplier
+  const stepLoadingMult = getStepLoadingMultiplier(weekIndex, phase);
+  
+  // Age-based volume adjustment for Masters athletes
+  let ageMult = 1.0;
+  const age = Number(profile.age) || 0;
+  if (age >= 50) {
+    ageMult = 0.85; // Masters 50+ = 85% volume
+  } else if (age >= 40) {
+    ageMult = 0.90; // Masters 40-49 = 90% volume
+  }
+  
+  return base * stepLoadingMult * ageMult;
+}
+
+function transitionMultiplier(profile, weekIndex) {
+  const tw = Number(profile.transitionWeeks) || 0;
+  if (tw <= 0) return { intensity: 1, volume: 1 };
+  if (weekIndex >= tw) return { intensity: 1, volume: 1 };
+  const mode = profile.transitionProfile || 'standard';
+  const t = (weekIndex + 1) / tw;
+  let minI = 0.85, minV = 0.80;
+  if (mode === 'conservative') { minI = 0.80; minV = 0.70; }
+  if (mode === 'aggressive') { minI = 0.90; minV = 0.90; }
+  return { intensity: minI + (1 - minI) * t, volume: minV + (1 - minV) * t };
+}
+
+function hash32(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function blockSeed() {
+  return (state.currentBlock && state.currentBlock.seed) ? Number(state.currentBlock.seed) : 0;
+}
+
+const HYPERTROPHY_POOLS = {
+  upperPush: [
+    { name: 'Dumbbell Bench Press', refLift: 'bs', refPct: 0.22, description: '~22% of BS per hand' },
+    { name: 'Incline Dumbbell Press', refLift: 'bs', refPct: 0.20, description: '~20% of BS per hand' },
+    { name: 'Dips', refLift: 'bs', refPct: 0.00, description: 'Bodyweight or add load' },
+    { name: 'Overhead Dumbbell Press', refLift: 'bs', refPct: 0.15, description: '~15% of BS per hand' },
+    { name: 'Landmine Press', refLift: 'bs', refPct: 0.30, description: '~30% of BS' }
+  ],
+  upperPull: [
+    { name: 'Barbell Row', refLift: 'bs', refPct: 0.40, description: '~40% of BS' },
+    { name: 'Pull-ups', refLift: '', refPct: 0, description: 'Bodyweight or add load' },
+    { name: 'Lat Pulldown', refLift: 'bs', refPct: 0.35, description: '~35% of BS' },
+    { name: 'Cable Row', refLift: 'bs', refPct: 0.35, description: '~35% of BS' },
+    { name: 'T-Bar Row', refLift: 'bs', refPct: 0.40, description: '~40% of BS' },
+    { name: 'Single-Arm Dumbbell Row', refLift: 'bs', refPct: 0.18, description: '~18% of BS per hand' }
+  ],
+  shoulders: [
+    { name: 'Lateral Raise', refLift: 'bs', refPct: 0.06, description: '~6% of BS per hand' },
+    { name: 'Face Pull', refLift: 'bs', refPct: 0.15, description: '~15% of BS' },
+    { name: 'Rear Delt Fly', refLift: 'bs', refPct: 0.05, description: '~5% of BS per hand' },
+    { name: 'Front Raise', refLift: 'bs', refPct: 0.06, description: '~6% of BS per hand' },
+    { name: 'Cable Lateral Raise', refLift: 'bs', refPct: 0.06, description: '~6% of BS per hand' }
+  ],
+  arms: [
+    { name: 'Barbell Curl', refLift: 'bs', refPct: 0.25, description: '~25% of BS' },
+    { name: 'Hammer Curl', refLift: 'bs', refPct: 0.12, description: '~12% of BS per hand' },
+    { name: 'Tricep Extension', refLift: 'bs', refPct: 0.20, description: '~20% of BS' },
+    { name: 'Tricep Pushdown', refLift: 'bs', refPct: 0.25, description: '~25% of BS' },
+    { name: 'Dumbbell Curl', refLift: 'bs', refPct: 0.10, description: '~10% of BS per hand' },
+    { name: 'Close-Grip Push-up', refLift: '', refPct: 0, description: 'Bodyweight or add load' }
+  ],
+  lowerPosterior: [
+    { name: 'Romanian Deadlift', refLift: 'bs', refPct: 0.60, description: '~60% of BS' },
+    { name: 'Leg Curl', refLift: 'bs', refPct: 0.25, description: '~25% of BS' },
+    { name: 'Good Morning', refLift: 'bs', refPct: 0.50, description: '~50% of BS' },
+    { name: 'Glute Bridge', refLift: 'bs', refPct: 0.60, description: '~60% of BS' },
+    { name: 'Nordic Curl', refLift: '', refPct: 0, description: 'Bodyweight' }
+  ],
+  lowerQuad: [
+    { name: 'Bulgarian Split Squat', refLift: 'bs', refPct: 0.55, description: '~55% of BS' },
+    { name: 'Leg Press', refLift: 'bs', refPct: 1.20, description: '~120% of BS' },
+    { name: 'Walking Lunge', refLift: 'bs', refPct: 0.35, description: '~35% of BS' },
+    { name: 'Leg Extension', refLift: 'bs', refPct: 0.30, description: '~30% of BS' },
+    { name: 'Step-up', refLift: 'bs', refPct: 0.40, description: '~40% of BS' }
+  ]
+};
+
+
+function pickFromPool(pool, key, weekIndex) {
+  if (!pool || pool.length === 0) return null;
+  const h = hash32(String(key) + '|w' + String(weekIndex));
+  const idx = (h % (pool.length * 7)) % pool.length;
+  return pool[idx];
+}
+
+// v7.30: Duplicate-aware pool picker
+function pickFromPoolExcluding(pool, key, weekIndex, excludeNames = []) {
+  if (!pool || pool.length === 0) return null;
+  
+  // Filter out excluded exercises
+  const availablePool = pool.filter(ex => !excludeNames.includes(ex.name));
+  if (availablePool.length === 0) return pool[0]; // Fallback if all excluded
+  
+  const h = hash32(String(key) + '|w' + String(weekIndex));
+  const idx = (h % (availablePool.length * 7)) % availablePool.length;
+  return availablePool[idx];
+}
+
+function chooseHypertrophyExercise(poolName, profile, weekIndex, slotKey, excludeNames = []) {
+  const pool = HYPERTROPHY_POOLS[poolName] || [];
+  if (pool.length === 0) return { name: poolName, refLift: '', refPct: 0, description: '' };
+  
+  // v7.11 FIX: Same exercise for ENTIRE BLOCK (4 weeks)
+  // Remove weekIndex from key so exercise doesn't change weekly
+  // This allows proper progression tracking
+  // v7.30 FIX: Add duplicate prevention via excludeNames
+  const seed = Number(profile.lastBlockSeed || 0) || blockSeed() || 0;
+  const key = `${seed}|hyp|${poolName}|${slotKey}|${profile.programType || 'general'}`;
+  // Note: weekIndex removed - same exercise all 4 weeks
+  return pickFromPoolExcluding(pool, key, 0, excludeNames) || pool[0];  // Use week 0 always
+}
+
+// v7.11 NEW: Calculate hypertrophy progression parameters
+function getHypertrophyProgression(weekIndex, phase) {
+  // Research-based progression:
+  // Week 1: Lower volume, higher RIR (conditioning)
+  // Week 2-3: Higher volume, moderate RIR (accumulation)
+  // Week 4: Peak volume, low RIR (overreach)
+  // Then deload
+  
+  const weekInMeso = weekIndex % 4;
+  
+  if (phase === 'deload') {
+    return { setMultiplier: 0.6, rirAdjustment: 2 }; // 60% sets, RIR +2
+  }
+  
+  // Accumulation phase (typical)
+  const progression = {
+    0: { setMultiplier: 1.0, rirAdjustment: 1 },   // Week 1: Base, RIR 3
+    1: { setMultiplier: 1.0, rirAdjustment: 0 },   // Week 2: Base, RIR 2
+    2: { setMultiplier: 1.2, rirAdjustment: 0 },   // Week 3: +20% sets, RIR 2
+    3: { setMultiplier: 1.2, rirAdjustment: -1 }   // Week 4: +20% sets, RIR 1
+  };
+  
+  return progression[weekInMeso] || progression[0];
+}
+
+// v7.11 NEW: Helper to create hypertrophy exercise with weight guidance
+// v7.30 FIX: Added excludeNames parameter for duplicate prevention
+function makeHypExercise(poolName, profile, weekIndex, slotKey, sets, reps, baseRIR, hypProg, excludeNames = []) {
+  const ex = chooseHypertrophyExercise(poolName, profile, weekIndex, slotKey, excludeNames);
+  return {
+    name: ex.name,
+    sets: sets,
+    reps: reps,
+    pct: 0,
+    tag: 'hypertrophy',
+    targetRIR: Math.max(0, baseRIR + hypProg.rirAdjustment),
+    liftKey: ex.refLift || '',
+    recommendedPct: ex.refPct || 0,
+    description: ex.description || ''
+  };
+}
+
+
+function microIntensityFor(profile, phase, weekIndex) {
+  // v7.44 ELITE SYSTEM #1: Step-loading with experience-based intensity caps
+  const blockLength = Number(profile.blockLength) || 8;
+  const progressRatio = blockLength > 1 ? weekIndex / (blockLength - 1) : 0;
+  
+  // v7.43: Training age safety ceiling (preserved)
+  const trainingAge = Number(profile.trainingAge) || 1;
+  let trainingAgeCap = 1.00;
+  
+  if (trainingAge < 1) {
+    trainingAgeCap = 0.75;
+  } else if (trainingAge < 2) {
+    trainingAgeCap = 0.85;
+  } else if (trainingAge < 3) {
+    trainingAgeCap = 0.90;
+  }
+  
+  // v7.44 ELITE: Experience level caps (92% intermediate, 95% advanced)
+  const athleteMode = profile.athleteMode || 'recreational';
+  let experienceCap = 0.88; // Recreational default
+  
+  if (athleteMode === 'advanced' || athleteMode === 'elite') {
+    experienceCap = 0.95; // Advanced athletes can use full range
+  } else if (athleteMode === 'intermediate' || athleteMode === 'competition') {
+    experienceCap = 0.92; // Intermediate cap at 92%
+  }
+  
+  const pt = (profile.programType || 'general');
+  let baseIntensity = 0.70;
+  
+  // Program-specific base intensity curves
+  if (pt === 'competition') {
+    const startIntensity = 0.70;
+    const peakIntensity = 0.95;
+    const range = peakIntensity - startIntensity;
+    baseIntensity = startIntensity + (range * Math.pow(progressRatio, 0.8));
+  }
+  else if (pt === 'maximum_strength') {
+    baseIntensity = 0.80 + (0.15 * progressRatio);
+  }
+  else if (pt === 'powerbuilding') {
+    baseIntensity = 0.70 + (0.13 * progressRatio);
+  }
+  else if (pt === 'hypertrophy') {
+    baseIntensity = 0.68 + (0.12 * progressRatio);
+  }
+  else {
+    // General
+    if (phase === 'accumulation') {
+      baseIntensity = 0.70 + (0.10 * progressRatio);
+    } else if (phase === 'intensification') {
+      baseIntensity = 0.78 + (0.10 * progressRatio);
+    } else {
+      baseIntensity = 0.60; // deload
+    }
+  }
+  
+  // v7.44 ELITE: Apply step-loading intensity modulation
+  const experienceLevel = athleteMode === 'advanced' || athleteMode === 'elite' ? 'advanced' :
+                          athleteMode === 'intermediate' || athleteMode === 'competition' ? 'intermediate' : 'beginner';
+  const stepIntensity = getStepLoadingIntensity(weekIndex, phase, baseIntensity, experienceLevel);
+  
+  // Apply cascading caps: training age → experience → absolute safety
+  let finalIntensity = stepIntensity;
+  finalIntensity = Math.min(finalIntensity, trainingAgeCap);
+  finalIntensity = Math.min(finalIntensity, experienceCap);
+  finalIntensity = Math.min(finalIntensity, 0.95); // Absolute safety cap
+  
+  return finalIntensity;
+}
+
+function chooseVariation(family, profile, weekIndex, phase, slotKey, dayIndex = 0) {
+  let pool = SWAP_POOLS[family] || [];
+  if (pool.length === 0) return { name: slotKey, liftKey: '' };
+  
+  // v7.43 CRITICAL FIX #1: INJURY SAFETY FILTER
+  const injuries = Array.isArray(profile.injuries) ? profile.injuries : [];
+  
+  if (injuries.length > 0) {
+    const originalPoolSize = pool.length;
+    pool = pool.filter(ex => {
+      const name = (ex.name || '').toLowerCase();
+      
+      // SHOULDER INJURY: Block overhead positions under load
+      if (injuries.includes('shoulder')) {
+        if (name.includes('snatch') && !name.includes('pull') && !name.includes('power')) {
+          console.warn('🚫 INJURY FILTER: Blocked', ex.name, '(shoulder - overhead catch)');
+          return false;
+        }
+        if ((name.includes('jerk') || name.includes('strict press')) && 
+            !name.includes('power jerk') && !name.includes('push jerk') && 
+            !name.includes('push press')) {
+          console.warn('🚫 INJURY FILTER: Blocked', ex.name, '(shoulder - overhead press)');
+          return false;
+        }
+        if (name.includes('overhead squat') || name.includes('ohs')) {
+          console.warn('🚫 INJURY FILTER: Blocked', ex.name, '(shoulder - OHS)');
+          return false;
+        }
+        if (name.includes('behind-the-neck') || name.includes('btn')) {
+          console.warn('🚫 INJURY FILTER: Blocked', ex.name, '(shoulder - BTN)');
+          return false;
+        }
+      }
+      
+      // WRIST INJURY: Block front rack positions
+      if (injuries.includes('wrist')) {
+        if ((name.includes('front squat') || (name.includes('clean') && !name.includes('pull'))) &&
+            !name.includes('power')) {
+          console.warn('🚫 INJURY FILTER: Blocked', ex.name, '(wrist - front rack)');
+          return false;
+        }
+      }
+      
+      // ELBOW INJURY: Block heavy pressing
+      if (injuries.includes('elbow')) {
+        if (name.includes('press') && !name.includes('leg press')) {
+          console.warn('🚫 INJURY FILTER: Blocked', ex.name, '(elbow - pressing)');
+          return false;
+        }
+        if (name.includes('jerk')) {
+          console.warn('🚫 INJURY FILTER: Blocked', ex.name, '(elbow - jerk lockout)');
+          return false;
+        }
+      }
+      
+      // KNEE INJURY: Block full depth movements
+      if (injuries.includes('knee')) {
+        if ((name.includes('squat') || name.includes('snatch') || name.includes('clean')) &&
+            !name.includes('power') && !name.includes('pause') && !name.includes('tempo')) {
+          console.warn('🚫 INJURY FILTER: Blocked', ex.name, '(knee - full depth)');
+          return false;
+        }
+      }
+      
+      // BACK INJURY: Block heavy axial loading
+      if (injuries.includes('back')) {
+        if (name.includes('back squat') || name.includes('deadlift') || name.includes('good morning')) {
+          console.warn('🚫 INJURY FILTER: Blocked', ex.name, '(back - axial load)');
+          return false;
+        }
+        if (name.includes('pull') && !name.includes('high pull')) {
+          console.warn('🚫 INJURY FILTER: Blocked', ex.name, '(back - heavy pull)');
+          return false;
+        }
+      }
+      
+      // HIP INJURY: Block heavy squatting
+      if (injuries.includes('hip')) {
+        if (name.includes('squat') && !name.includes('tempo')) {
+          console.warn('🚫 INJURY FILTER: Blocked', ex.name, '(hip - squatting)');
+          return false;
+        }
+      }
+      
+      // ANKLE INJURY: Block split positions
+      if (injuries.includes('ankle')) {
+        if (name.includes('jerk') && !name.includes('power jerk') && !name.includes('push jerk')) {
+          console.warn('🚫 INJURY FILTER: Blocked', ex.name, '(ankle - split stance)');
+          return false;
+        }
+      }
+      
+      return true;
+    });
+    
+    // Emergency fallback if ALL exercises filtered
+    if (pool.length === 0) {
+      console.error('⚠️ ALL EXERCISES FILTERED for', family, '! Using emergency fallback');
+      if (family === 'snatch') pool = [{ name: 'Power Snatch', liftKey: 'snatch' }];
+      else if (family === 'cj') pool = [{ name: 'Power Clean + Push Jerk', liftKey: 'cj' }];
+      else if (family === 'bs' || family === 'fs') pool = [{ name: 'Tempo Front Squat', liftKey: 'fs' }];
+      else pool = SWAP_POOLS[family];
+    }
+    
+    if (pool.length < originalPoolSize && weekIndex === 0 && dayIndex === 0) {
+      console.log(`✅ Injury filter: ${originalPoolSize} → ${pool.length} safe exercises for ${family}`);
+    }
+  }
+  
+  // Filter out block variations if user has includeBlocks set to false
+  const allowBlocks = (profile.includeBlocks === true || profile.includeBlocks === undefined);
+  if (!allowBlocks) {
+    pool = pool.filter(ex => {
+      const name = (ex.name || '').toLowerCase();
+      return !name.includes('block') && !name.includes('from blocks');
+    });
+    if (pool.length === 0) pool = SWAP_POOLS[family];
+  }
+  
+  const pt = (profile.programType || 'general');
+  const mode = (profile.athleteMode || 'recreational');
+  const preferSpecific = (mode === 'competition' || pt === 'competition');
+  const seed = Number(profile.lastBlockSeed || 0) || blockSeed() || 0;
+  const key = `${seed}|${family}|${slotKey}|${phase}|${pt}|${mode}|d${dayIndex}`;
+  
+  if (preferSpecific && (phase === 'intensification')) {
+    const h = hash32(key + '|w' + weekIndex);
+    if ((h % 10) < 7) return pool[0];
+  }
+  
+  const selected = pickFromPool(pool, key, weekIndex) || pool[0];
+  return selected;
+}
+
+function chooseVariationExcluding(family, profile, weekIndex, phase, slotKey, excludeNames = [], dayIndex = 0) {
+  const pool = SWAP_POOLS[family] || [];
+  if (pool.length === 0) return { name: slotKey, liftKey: '' };
+  
+  // Filter out excluded exercises
+  const availablePool = pool.filter(ex => !excludeNames.includes(ex.name));
+  
+  // If filtering removed everything, use full pool as fallback
+  const finalPool = availablePool.length > 0 ? availablePool : pool;
+  
+  // Use same selection logic as chooseVariation but with filtered pool
+  const pt = (profile.programType || 'general');
+  const mode = (profile.athleteMode || 'recreational');
+  const preferSpecific = (mode === 'competition' || pt === 'competition');
+  
+  // CRITICAL FIX: Use profile.lastBlockSeed first (NEW seed), not old blockSeed()
+  const seed = Number(profile.lastBlockSeed || 0) || blockSeed() || 0;
+  
+  // CRITICAL FIX: Include dayIndex
+  const key = `${seed}|${family}|${slotKey}|${phase}|${pt}|${mode}|d${dayIndex}`;
+  
+  if (preferSpecific && (phase === 'intensification')) {
+    const h = hash32(key + '|w' + weekIndex);
+    if ((h % 10) < 7) return finalPool[0];
+  }
+  
+  return pickFromPool(finalPool, key, weekIndex) || finalPool[0];
+}
+
+function makeWeekPlan(profile, weekIndex) {
+  const phase = phaseForWeek(weekIndex);
+  const baseI = microIntensityFor(profile, phase, weekIndex);
+  const trans = transitionMultiplier(profile, weekIndex);
+  const intensity = clamp(baseI * trans.intensity, 0.55, 0.92);
+  const volFactor = clamp(volumeFactorFor(profile, phase, weekIndex) * trans.volume, 0.45, 1.10);
+  const mainDays = Array.isArray(profile.mainDays) && profile.mainDays.length ? profile.mainDays.slice() : [2, 4, 6];
+  const accessoryDays = Array.isArray(profile.accessoryDays) && profile.accessoryDays.length ? profile.accessoryDays.slice() : [7];
+  const mainSet = new Set(mainDays.map(Number));
+  const accClean = accessoryDays.map(Number).filter(d => !mainSet.has(d));
+  
+  // v7.31: Balanced template selection for ALL day counts
+  // Returns template index that ensures balanced snatch/C&J volume
+  // v7.43 CRITICAL FIX #4: Rolling symmetry for 1-2 day frequencies
+  const getBalancedTemplateIndex = (dayCount, dayIndex, weekIndex) => {
+    const patterns = {
+      1: [0, 1, 3],        // Single day: ROTATE across weeks
+      2: [0, 1, 3, 0, 1, 3], // 2 days: Full pattern over 3 weeks
+      3: [0, 1, 3],        // Sn, CJ, Combined - 2:1 ratio ✅
+      4: [0, 1, 0, 1],     // Sn, CJ, Sn, CJ - 2:1 with C&J 5 sets ✅
+      5: [0, 1, 3, 0, 1],  // Sn, CJ, Combined, Sn, CJ - consistent 2:1 ✅
+      6: [0, 1, 3, 0, 1, 3] // Sn, CJ, Combined, Sn, CJ, Combined - 2:1 ✅
+    };
+    
+    const pattern = patterns[dayCount] || patterns[6];
+    
+    // v7.43 FIX: For 1-2 day frequencies, rotate template based on WEEK
+    if (dayCount <= 2) {
+      const templateOffset = (weekIndex * dayCount) % pattern.length;
+      const effectiveIndex = (dayIndex + templateOffset) % pattern.length;
+      return pattern[effectiveIndex];
+    }
+    
+    // For 3+ days, use normal day-based rotation
+    return pattern[dayIndex % pattern.length];
+  };
+  
+  // v7.36: Removed useSnatchOnStrengthDay() - no longer needed with Combined template
+  
+  // CRITICAL FIX: Generate exercise templates per-day, not once for whole week
+  const generateMainTemplate = (templateIndex, dayIndex) => {
+    const dayCount = mainDays.length;
+    
+    const templates = [
+      // Template 0: Snatch Focus
+      { title: 'Snatch Focus', kind: 'snatch', main: 'Snatch', liftKey: 'snatch', work: [
+        { name: chooseVariation('snatch', profile, weekIndex, phase, 'snatch_main', dayIndex).name, liftKey: 'snatch', sets: Math.round(5 * volFactor), reps: 2, pct: intensity },
+        { name: chooseVariation('pull_snatch', profile, weekIndex, phase, 'snatch_pull', dayIndex).name, liftKey: 'snatch', sets: Math.round(4 * volFactor), reps: 3, pct: clamp(intensity + getPullOffset(phase, 'snatch'), 0.65, 1.00) },
+        { name: chooseVariation('bs', profile, weekIndex, phase, 'back_squat', dayIndex).name, liftKey: 'bs', sets: Math.round(4 * volFactor), reps: 5, pct: clamp(intensity + 0.05, 0.55, 0.92) }
+      ]},
+      // Template 1: C&J Focus - v7.36: Increased sets from 4 to 5 for balance
+      { title: 'Clean & Jerk Focus', kind: 'cj', main: 'Clean & Jerk', liftKey: 'cj', work: [
+        { name: chooseVariation('cj', profile, weekIndex, phase, 'cj_main', dayIndex).name, liftKey: 'cj', sets: Math.round(5 * volFactor), reps: 1, pct: clamp(intensity + 0.05, 0.60, 0.95) },
+        { name: chooseVariation('pull_clean', profile, weekIndex, phase, 'clean_pull', dayIndex).name, liftKey: 'cj', sets: Math.round(4 * volFactor), reps: 3, pct: clamp(intensity + getPullOffset(phase, 'clean'), 0.70, 1.05) },
+        { name: chooseVariation('fs', profile, weekIndex, phase, 'front_squat', dayIndex).name, liftKey: 'fs', sets: Math.round(4 * volFactor), reps: 3, pct: clamp(intensity + 0.08, 0.55, 0.92) }
+      ]},
+      // Template 2: Strength + Positions (DEPRECATED - kept for backward compatibility only)
+      { title: 'Strength + Positions', kind: 'strength', main: 'Back Squat', liftKey: 'bs', work: [
+        { name: chooseVariation('bs', profile, weekIndex, phase, 'back_squat_strength', dayIndex).name, liftKey: 'bs', sets: Math.round(5 * volFactor), reps: 3, pct: clamp(intensity + 0.08, 0.55, 0.95) },
+        { name: chooseVariation('snatch', profile, weekIndex, phase, 'snatch_secondary', dayIndex).name, liftKey: 'snatch', sets: Math.round(4 * volFactor), reps: 2, pct: clamp(intensity - 0.02, 0.55, 0.90) },
+        { name: chooseVariation('press', profile, weekIndex, phase, 'press', dayIndex).name, liftKey: chooseVariation('press', profile, weekIndex, phase, 'press', dayIndex).liftKey, sets: Math.round(4 * volFactor), reps: 5, pct: clamp(intensity - 0.12, 0.45, 0.80) }
+      ]},
+      // Template 3: Combined + Squat - v7.36: NEW for balanced volume across all programs
+      { title: 'Combined + Squat', kind: 'combined', main: 'Both Lifts', liftKey: 'snatch', work: [
+        { name: chooseVariation('snatch', profile, weekIndex, phase, 'snatch_skill', dayIndex).name, liftKey: 'snatch', sets: Math.round(4 * volFactor), reps: 2, pct: clamp(intensity - 0.05, 0.55, 0.88) },
+        { name: chooseVariation('cj', profile, weekIndex, phase, 'cj_skill', dayIndex).name, liftKey: 'cj', sets: Math.round(4 * volFactor), reps: 1, pct: clamp(intensity, 0.60, 0.90) },
+        { name: chooseVariation('bs', profile, weekIndex, phase, 'back_squat_combined', dayIndex).name, liftKey: 'bs', sets: Math.round(4 * volFactor), reps: 3, pct: clamp(intensity + 0.08, 0.55, 0.95) },
+        { name: chooseVariation('press', profile, weekIndex, phase, 'press_accessory', dayIndex).name, liftKey: chooseVariation('press', profile, weekIndex, phase, 'press_accessory', dayIndex).liftKey, sets: Math.round(3 * volFactor), reps: 5, pct: clamp(intensity - 0.15, 0.40, 0.75) }
+      ]}
+    ];
+    return templates[templateIndex % templates.length];
+  };
+  
+  // Build accessory template with no duplicates per day
+  // v7.43 CRITICAL FIX #6: Program-specific exercise descriptions
+  const generateAccessoryTemplate = (dayIndex) => {
+    const acc1 = chooseVariation('accessory', profile, weekIndex, phase, 'accessory_1', dayIndex);
+    const acc2 = chooseVariationExcluding('accessory', profile, weekIndex, phase, 'accessory_2', [acc1.name], dayIndex);
+    
+    const programType = profile.programType || 'general';
+    
+    const enhanceDescription = (exercise) => {
+      let desc = exercise.description || '';
+      
+      if (programType === 'hypertrophy' || programType === 'powerbuilding') {
+        desc += ' | Tempo: 3-1-1-0 (slow eccentric)';
+        desc += ' | RIR: 1-2 (near failure)';
+        desc += ' | Focus: Muscle tension';
+      }
+      else if (programType === 'competition') {
+        desc += ' | Tempo: Explosive';
+        desc += ' | RIR: 3-4 (technical reserve)';
+        desc += ' | Focus: Speed & quality';
+      }
+      else if (programType === 'maximum_strength') {
+        desc += ' | Tempo: Controlled';
+        desc += ' | RIR: 2-3';
+        desc += ' | Focus: Stability';
+      }
+      
+      return desc;
+    };
+    
+    return { title: 'Accessory + Core', kind: 'accessory', main: 'Accessory', liftKey: '', work: [
+      { 
+        name: acc1.name, 
+        liftKey: acc1.liftKey, 
+        recommendedPct: acc1.recommendedPct || 0, 
+        description: enhanceDescription(acc1), 
+        sets: Math.round(3 * volFactor), 
+        reps: programType === 'hypertrophy' ? 10 : 5, 
+        pct: 0 
+      },
+      { 
+        name: acc2.name, 
+        liftKey: acc2.liftKey, 
+        recommendedPct: acc2.recommendedPct || 0, 
+        description: enhanceDescription(acc2), 
+        sets: Math.round(3 * volFactor), 
+        reps: programType === 'hypertrophy' ? 12 : 8, 
+        pct: 0 
+      },
+      { name: 'Core + Mobility', sets: 1, reps: 1, pct: 0 }
+    ]};
+  };
+  
+  const sessions = [];
+  const dayCount = mainDays.length;
+  mainDays.map(Number).sort((a, b) => a - b).forEach((d, i) => {
+    // v7.31: Use balanced template selection instead of simple index
+    const balancedTemplateIndex = getBalancedTemplateIndex(dayCount, i, weekIndex);
+    const t = generateMainTemplate(balancedTemplateIndex, i);
+    sessions.push({ ...t, dow: d });
+  });
+  accClean.sort((a, b) => a - b).forEach((d, i) => {
+    const accessoryDayIndex = mainDays.length + i; // Unique index for accessory days
+    sessions.push({ ...generateAccessoryTemplate(accessoryDayIndex), dow: d });
+  });
+  
+  // DURATION-AWARE PROGRAMMING: Apply to ALL program types
+  const duration = profile.duration || 75;
+  const programType = profile.programType || 'general';
+  
+  sessions.forEach((s, si) => {
+    // v7.11: Get hypertrophy progression parameters
+    const hypProg = getHypertrophyProgression(weekIndex, phase);
+    
+    // POWERBUILDING: Hypertrophy + Olympic
+    if (programType === 'powerbuilding') {
+      // v7.11 FIX #1: Increased base volume (was 3, now 4)
+      // v7.11 FIX #2: Apply weekly progression multiplier
+      const baseHypSets = phase === 'accumulation' ? 4 : 
+                          phase === 'intensification' ? 4 : 2;
+      const hypSets = Math.round(baseHypSets * volFactor * hypProg.setMultiplier);
+      const hypReps = phase === 'accumulation' ? 12 : phase === 'intensification' ? 8 : 8;
+      
+      if (s.kind === 'accessory') {
+        s.title = 'Hypertrophy + Pump';
+        const dayKey = `d${si}`; // Use session index to differentiate days
+        if (duration >= 90) {
+          // v7.30 FIX: Prevent duplicates from same pool
+          const sh1 = makeHypExercise('shoulders', profile, weekIndex, `hyp_acc_sh1_${dayKey}`, hypSets, 10, 2, hypProg);
+          const sh2 = makeHypExercise('shoulders', profile, weekIndex, `hyp_acc_sh2_${dayKey}`, hypSets, 15, 3, hypProg, [sh1.name]);
+          s.work = [
+            makeHypExercise('upperPush', profile, weekIndex, `hyp_acc_push_${dayKey}`, hypSets + 1, hypReps, 2, hypProg),
+            makeHypExercise('upperPull', profile, weekIndex, `hyp_acc_pull_${dayKey}`, hypSets + 1, hypReps, 2, hypProg),
+            sh1,
+            sh2,
+            makeHypExercise('lowerQuad', profile, weekIndex, `hyp_acc_quad_${dayKey}`, hypSets, 15, 3, hypProg),
+            makeHypExercise('lowerPosterior', profile, weekIndex, `hyp_acc_post_${dayKey}`, hypSets, hypReps, 2, hypProg),
+            { name: 'Core Circuit', sets: 3, reps: 1, pct: 0, tag: 'core' }
+          ];
+        } else {
+          s.work = [
+            makeHypExercise('upperPush', profile, weekIndex, `hyp_acc_push_${dayKey}`, hypSets, hypReps, 2, hypProg),
+            makeHypExercise('upperPull', profile, weekIndex, `hyp_acc_pull_${dayKey}`, hypSets, hypReps, 2, hypProg),
+            makeHypExercise('lowerQuad', profile, weekIndex, `hyp_acc_quad_${dayKey}`, hypSets, 12, 2, hypProg),
+            { name: 'Core Circuit', sets: 2, reps: 1, pct: 0, tag: 'core' }
+          ];
+        }
+      } else if (s.kind === 'snatch') {
+        if (duration >= 90) {
+          s.work = [...s.work,
+            makeHypExercise('upperPush', profile, weekIndex, 'hyp_sn_push', hypSets, hypReps - 2, 2, hypProg),
+            makeHypExercise('upperPull', profile, weekIndex, 'hyp_sn_pull', hypSets, hypReps - 2, 2, hypProg),
+            makeHypExercise('shoulders', profile, weekIndex, 'hyp_sn_sh', hypSets, hypReps, 2, hypProg),
+            makeHypExercise('arms', profile, weekIndex, 'hyp_sn_arm', hypSets, hypReps, 2, hypProg)
+          ];
+        } else {
+          s.work = [...s.work,
+            makeHypExercise('upperPush', profile, weekIndex, 'hyp_sn_push', hypSets, 10, 2, hypProg),
+            makeHypExercise('upperPull', profile, weekIndex, 'hyp_sn_pull', hypSets, 10, 2, hypProg)
+          ];
+        }
+      } else if (s.kind === 'cj') {
+        if (duration >= 90) {
+          // v7.30 FIX: Prevent duplicates from same pool
+          const pull1 = makeHypExercise('upperPull', profile, weekIndex, 'hyp_cj_pull1', hypSets, hypReps - 2, 2, hypProg);
+          const pull2 = makeHypExercise('upperPull', profile, weekIndex, 'hyp_cj_pull2', hypSets, hypReps, 2, hypProg, [pull1.name]);
+          s.work = [...s.work,
+            pull1,
+            pull2,
+            makeHypExercise('shoulders', profile, weekIndex, 'hyp_cj_sh', hypSets, hypReps, 2, hypProg),
+            makeHypExercise('arms', profile, weekIndex, 'hyp_cj_arm1', hypSets, hypReps, 3, hypProg)
+          ];
+        } else {
+          s.work = [...s.work,
+            makeHypExercise('upperPull', profile, weekIndex, 'hyp_cj_pull', hypSets, 10, 2, hypProg),
+            makeHypExercise('arms', profile, weekIndex, 'hyp_cj_arm1', hypSets, 12, 2, hypProg)
+          ];
+        }
+      } else if (s.kind === 'strength') {
+        if (duration >= 90) {
+          // v7.30 FIX: Prevent duplicates from same pool
+          const post1 = makeHypExercise('lowerPosterior', profile, weekIndex, 'hyp_st_post1', hypSets, hypReps - 2, 2, hypProg);
+          const post2 = makeHypExercise('lowerPosterior', profile, weekIndex, 'hyp_st_post2', hypSets, hypReps, 2, hypProg, [post1.name]);
+          s.work = [...s.work,
+            post1,
+            post2,
+            makeHypExercise('lowerQuad', profile, weekIndex, 'hyp_st_quad', hypSets, hypReps - 2, 2, hypProg),
+            { name: 'Calf Raises', sets: 4, reps: 15, pct: 0, tag: 'hypertrophy' }
+          ];
+        } else {
+          s.work = [...s.work,
+            makeHypExercise('lowerPosterior', profile, weekIndex, 'hyp_st_post1', hypSets, 10, 2, hypProg),
+            { name: 'Calf Raises', sets: 3, reps: 15, pct: 0, tag: 'hypertrophy' }
+          ];
+        }
+      }
+    }
+    
+    // HYPERTROPHY: Higher volume bodybuilding
+    else if (programType === 'hypertrophy') {
+      // v7.11 FIX: Increased base volume and added progression
+      const baseHypSets = phase === 'accumulation' ? 5 : 4; // Was 4 and 3
+      const hypSets = Math.round(baseHypSets * volFactor * hypProg.setMultiplier);
+      const dayKey = `d${si}`; // Use session index
+      if (s.kind === 'accessory' && duration >= 75) {
+        s.work = [
+          ...s.work,
+          makeHypExercise('upperPush', profile, weekIndex, `hyp_acc_extra1_${dayKey}`, hypSets, 12, 2, hypProg),
+          makeHypExercise('shoulders', profile, weekIndex, `hyp_acc_extra2_${dayKey}`, 3, 15, 3, hypProg)
+        ];
+      } else if (duration >= 75 && s.kind !== 'accessory') {
+        if (s.kind === 'snatch' || s.kind === 'strength') {
+          s.work = [...s.work,
+            makeHypExercise('upperPush', profile, weekIndex, `hyp_${s.kind}_push`, hypSets, 10, 2, hypProg),
+            makeHypExercise('upperPull', profile, weekIndex, `hyp_${s.kind}_pull`, hypSets, 10, 2, hypProg)
+          ];
+        } else if (s.kind === 'cj') {
+          s.work = [...s.work,
+            makeHypExercise('lowerQuad', profile, weekIndex, 'hyp_cj_quad', hypSets, 12, 2, hypProg),
+            makeHypExercise('lowerPosterior', profile, weekIndex, 'hyp_cj_post', hypSets, 10, 2, hypProg)
+          ];
+        }
+      }
+    }
+    
+    // STRENGTH: Heavy compounds + support work
+    else if (programType === 'strength' && duration >= 75 && s.kind !== 'accessory') {
+      const supportLift = s.kind === 'snatch' ? chooseVariation('pull_snatch', profile, weekIndex, phase, `${s.kind}_support`) :
+                         s.kind === 'cj' ? chooseVariation('pull_clean', profile, weekIndex, phase, `${s.kind}_support`) :
+                         chooseVariation('bs', profile, weekIndex, phase, `${s.kind}_support`);
+      s.work = [...s.work,
+        { name: supportLift.name, liftKey: supportLift.liftKey, sets: Math.round(3 * volFactor), reps: 3, pct: clamp(intensity + getPullOffset(phase, s.kind === 'snatch' ? 'snatch' : 'clean'), 0.65, 1.05), tag: 'strength' }
+      ];
+    }
+    
+    // GENERAL/COMPETITION/TECHNIQUE: Keep standard templates (already optimal)
+  });
+  
+  // v7.43 CRITICAL FIX #5: DURATION-AWARE TEMPLATE ENFORCEMENT
+  sessions.forEach((s, si) => {
+    if (duration === 60) {
+      // "Short" (60 min) - Maximum 3 exercises per session
+      if (s.kind === 'accessory') {
+        s.work = []; // Remove ALL accessories (no time)
+        console.log('⏱ Duration: 60min → Removed accessory day');
+        return;
+      }
+      
+      // Main days: Enforce 3-exercise limit
+      if (s.work.length > 3) {
+        console.log(`⏱ Duration: 60min → Truncated ${s.title} from ${s.work.length} to 3 exercises`);
+        s.work = s.work.slice(0, 3);
+      }
+      
+      // Additional safety: Cap sets at 5 per exercise
+      s.work.forEach(ex => {
+        if (ex.sets > 5) {
+          console.log(`⏱ Duration: 60min → Reduced ${ex.name} sets from ${ex.sets} to 5`);
+          ex.sets = 5;
+        }
+      });
+    }
+    // 75min and 90min: No enforcement needed (already handled by program logic)
+  });
+    
+  const days = sessions.map(s => {
+    const { dow, ...rest } = s;
+    return { ...rest, dow };
+  });
+  return { weekIndex, phase, intensity, volFactor, days };
+}
+
+function generateBlockFromSetup() {
+  const profile = getProfile();
+  profile.units = ($('setupUnits')?.value) || profile.units || 'kg';
+  profile.blockLength = Number($('setupBlockLength')?.value) || profile.blockLength || 8;
+  profile.programType = ($('setupProgram')?.value) || profile.programType || 'general';
+  profile.transitionWeeks = Number($('setupTransitionWeeks')?.value) || 0;
+  profile.transitionProfile = ($('setupTransitionProfile')?.value) || 'standard';
+  profile.prefPreset = ($('setupPrefPreset')?.value) || 'balanced';
+  profile.athleteMode = ($('setupAthleteMode')?.value) || 'recreational';
+  profile.includeBlocks = ($('setupIncludeBlocks')?.value) === 'yes';
+  profile.volumePref = ($('setupVolumePref')?.value) || 'reduced';
+  profile.duration = Number($('setupDuration')?.value) || 75; // Session duration in minutes
+  profile.restDuration = Number($('setupRestDuration')?.value) || 180; // v7.19: Rest timer duration
+  profile.autoCut = ($('setupAutoCut')?.value) !== 'no';
+  profile.age = Number($('setupAge')?.value) || null;
+  profile.trainingAge = Number($('setupTrainingAge')?.value) || 1;
+  profile.recovery = Number($('setupRecovery')?.value) || 3;
+  profile.limiter = $('setupLimiter')?.value || 'balanced';
+  profile.competitionDate = $('setupCompetitionDate')?.value || null;
+  profile.macroPeriod = $('setupMacroPeriod')?.value || 'AUTO';
+  profile.taperStyle = $('setupTaperStyle')?.value || 'default';
+  profile.heavySingleExposure = $('setupHeavySingleExposure')?.value || 'off';
+  const injuryPreset = $('setupInjuryPreset')?.value;
+  if (injuryPreset === 'multiple') {
+    profile.injuries = [];
+    if ($('injShoulder')?.checked) profile.injuries.push('shoulder');
+    if ($('injWrist')?.checked) profile.injuries.push('wrist');
+    if ($('injElbow')?.checked) profile.injuries.push('elbow');
+    if ($('injBack')?.checked) profile.injuries.push('back');
+    if ($('injHip')?.checked) profile.injuries.push('hip');
+    if ($('injKnee')?.checked) profile.injuries.push('knee');
+    if ($('injAnkle')?.checked) profile.injuries.push('ankle');
+  } else if (injuryPreset && injuryPreset !== 'none') {
+    profile.injuries = [injuryPreset];
+  } else {
+    profile.injuries = [];
+  }
+  // v7.36: Add bounds checking helper for max inputs (0-999kg reasonable range)
+  const validateMax = (value) => Math.max(0, Math.min(999, value || 0));
+  
+  const sn = validateMax(Number($('setupSnatch')?.value));
+  const cj = validateMax(Number($('setupCleanJerk')?.value));
+  const fs = validateMax(Number($('setupFrontSquat')?.value));
+  const bs = validateMax(Number($('setupBackSquat')?.value));
+  const pushPress = validateMax(Number($('setupPushPress')?.value));
+  const strictPress = validateMax(Number($('setupStrictPress')?.value));
+  
+  // Optional custom 1RMs (null = use auto-calculated ratio)
+  const powerSnatch = validateMax(Number($('setupPowerSnatch')?.value)) || null;
+  const powerClean = validateMax(Number($('setupPowerClean')?.value)) || null;
+  const ohs = validateMax(Number($('setupOHS')?.value)) || null;
+  const hangSnatch = validateMax(Number($('setupHangSnatch')?.value)) || null;
+  const hangPowerSnatch = validateMax(Number($('setupHangPowerSnatch')?.value)) || null;
+  const hangClean = validateMax(Number($('setupHangClean')?.value)) || null;
+  
+  if ([sn, cj, fs, bs].some(v => !Number.isFinite(v) || v <= 0)) {
+    alert('Please enter all four main 1RM values (Snatch, C&J, Front Squat, Back Squat).');
+    return;
+  }
+  profile.maxes = { 
+    snatch: sn, 
+    cj: cj, 
+    fs: fs, 
+    bs: bs, 
+    pushPress, 
+    strictPress,
+    powerSnatch,
+    powerClean,
+    ohs,
+    hangSnatch,
+    hangPowerSnatch,
+    hangClean
+  };
+  profile.workingMaxes = computeWorkingMaxes(profile.maxes);
+  
+  // Save updated profile before generating block
+  state.profiles[state.activeProfile] = profile;
+  saveState();
+  
+  // v7.35: BUG FIX - Validate that at least one training day is selected
+  const mainDays = getSelectedDays('main');
+  if (mainDays.length === 0) {
+    alert('⚠️ Please select at least one training day before generating a block.');
+    return;
+  }
+  
+  const blockLength = clamp(profile.blockLength, 4, 12);
+  const _seed = Date.now();
+  
+  // DEBUG: Log seed generation
+  console.log('🔧 CREATING NEW BLOCK:');
+  console.log('  New seed:', _seed);
+  console.log('  Old currentBlock seed:', state.currentBlock?.seed);
+  console.log('  Old profile.lastBlockSeed:', profile.lastBlockSeed);
+  
+  profile.lastBlockSeed = _seed;
+  
+  console.log('  Updated profile.lastBlockSeed:', profile.lastBlockSeed);
+  
+  const weeks = [];
+  for (let w = 0; w < blockLength; w++) {
+    weeks.push(makeWeekPlan(profile, w));
+  }
+  state.currentBlock = {
+    seed: _seed,
+    profileName: state.activeProfile,
+    startDateISO: todayISO(),
+    programType: profile.programType,
+    blockLength,
+    weeks
+  };
+  
+  // Save entire block to history
+  state.blockHistory = state.blockHistory || [];
+  const blockHistoryEntry = {
+    id: `${state.activeProfile}_${_seed}`,
+    profileName: state.activeProfile,
+    startDateISO: todayISO(),
+    programType: profile.programType,
+    blockLength,
+    blockSeed: _seed,
+    units: profile.units,
+    maxes: { ...profile.maxes },
+    weeks: weeks.map((week, weekIndex) => ({
+      weekIndex,
+      phase: week.phase,
+      days: week.days.map((day, dayIndex) => ({
+        dayIndex,
+        title: day.title,
+        dow: day.dow,
+        completed: false,
+        completedDate: null,
+        exercises: day.work.map(ex => ({
+          name: ex.name,
+          sets: ex.sets,
+          reps: ex.reps,
+          prescribedWeight: ex.pct && ex.liftKey ? 
+            roundTo(getBaseForExercise(ex.name, ex.liftKey, profile) * ex.pct, profile.units === 'kg' ? 1 : 1) : null,
+          prescribedPct: ex.pct ? Math.round(ex.pct * 100) : null,
+          liftKey: ex.liftKey || '',
+          actualSets: [] // Will be filled when completed
+        }))
+      }))
+    }))
+  };
+  state.blockHistory.unshift(blockHistoryEntry);
+  
+  ui.weekIndex = 0;
+  saveState();
+  showPage('Dashboard');
+  notify('Training block generated');
+  renderHistory();
+  
+  // v7.45: Auto-sync to cloud after generation
+  scheduleAutoSync();
+}
+
+function getAdjustedWorkingMax(profile, liftKey) {
+  const base = (profile.workingMaxes && profile.workingMaxes[liftKey]) ? Number(profile.workingMaxes[liftKey]) : 0;
+  
+  // If press maxes not entered, estimate from C&J
+  if (!base && (liftKey === 'pushPress' || liftKey === 'strictPress')) {
+    const cjMax = profile.workingMaxes?.cj || 0;
+    if (cjMax > 0) {
+      // Push Press ≈ 70% of C&J, Strict Press ≈ 55% of C&J
+      const ratio = liftKey === 'pushPress' ? 0.70 : 0.55;
+      const estimated = roundTo(cjMax * ratio, profile.units === 'kg' ? 1 : 1);
+      const adj = (profile.liftAdjustments && Number(profile.liftAdjustments[liftKey])) ? Number(profile.liftAdjustments[liftKey]) : 0;
+      const capped = clamp(adj, -0.05, 0.05);
+      return estimated * (1 + capped);
+    }
+  }
+  
+  const adj = (profile.liftAdjustments && Number(profile.liftAdjustments[liftKey])) ? Number(profile.liftAdjustments[liftKey]) : 0;
+  const capped = clamp(adj, -0.05, 0.05);
+  return base * (1 + capped);
+}
+
+// v7.10 FIX: Detect if exercise is a complex
+function isComplex(exerciseName) {
+  // Complexes contain '+' separator (e.g., "Clean + Front Squat + Jerk")
+  return (exerciseName || '').includes('+');
+}
+
+// CRITICAL: Determine if exercise should use true max or working max (90%)
+function shouldUseTrueMax(exerciseName) {
+  // Competition lifts and technical variations use TRUE MAX
+  // They are skill/speed limited, not strength limited
+  const trueMaxExercises = [
+    'snatch', 'power snatch', 'hang snatch', 'hang power snatch',
+    'block snatch', 'pause snatch', 'snatch balance', 'drop snatch',
+    'clean & jerk', 'clean', 'power clean', 'hang clean',
+    'hang power clean', 'block clean', 'pause clean',
+    'jerk', 'power jerk', 'split jerk', 'push jerk', 'jerk from blocks',
+    'jerk dip + drive', 'overhead squat'
+  ];
+  
+  const nameLower = (exerciseName || '').toLowerCase();
+  
+  // v7.10 FIX: ALL exercises now use TRUE MAX (100%)
+  // Research shows squats and pressing should use 100% of their own 1RM
+  // NOT 90% working max
+  // 
+  // Previously squats/pressing used working max (90%) - this was WRONG
+  // Elite programs (Catalyst, USAW, StrengthLog) use 100% of exercise 1RM
+  //
+  // Working max concept (90%) was only valid for the competition lifts
+  // to calculate derivatives (e.g., Back Squat working max = 90% of BS 1RM)
+  // But the prescription itself should still use 100% of that working max
+  
+  // Pulls use TRUE MAX (tied to competition lift)
+  if (nameLower.includes('pull')) {
+    return true;
+  }
+  
+  // v7.10: Squats now use TRUE MAX (was working max)
+  // v7.10: Pressing now uses TRUE MAX (was working max)
+  // Everything uses TRUE MAX
+  return true;
+}
+
+// Get the correct base weight for an exercise
+function getBaseForExercise(exerciseName, liftKey, profile) {
+  const nameLower = (exerciseName || '').toLowerCase();
+  
+  // v7.10 FIX: Complexes use reduced weight (5% lighter)
+  // Research: Elite programs (Catalyst, StrengthLog) program complexes at 70-85%
+  // Complexes are harder than singles due to cumulative fatigue
+  if (isComplex(exerciseName)) {
+    // Get base for the primary lift, then apply complex reduction
+    const baseWithoutComplexReduction = getBaseForExerciseInternal(exerciseName, liftKey, profile);
+    return baseWithoutComplexReduction * 0.95;  // 5% reduction for complexes
+  }
+  
+  return getBaseForExerciseInternal(exerciseName, liftKey, profile);
+}
+
+// Internal function to get base without complex adjustment
+function getBaseForExerciseInternal(exerciseName, liftKey, profile) {
+  const nameLower = (exerciseName || '').toLowerCase();
+  
+  // v7.38 CRITICAL FIX: For complexes, ALWAYS use liftKey (primary lift), NOT custom 1RMs
+  // Complexes are limited by the hardest component (e.g., "Power Snatch + Snatch" limited by full Snatch)
+  // Using a custom Power Snatch 1RM would severely underload the complex
+  // Research: Complexes prescribed at 70-85% of PRIMARY lift 1RM (Catalyst Athletics)
+  if (!isComplex(exerciseName)) {
+    // Check for custom 1RM first (ONLY for non-complex exercises)
+    const customMapping = {
+      'power snatch': 'powerSnatch',
+      'power clean': 'powerClean',
+      'overhead squat': 'ohs',
+      'hang power snatch': 'hangPowerSnatch',
+      'hang snatch': 'hangSnatch',
+      'hang clean': 'hangClean'
+    };
+    
+    for (const [exercise, key] of Object.entries(customMapping)) {
+      if (nameLower.includes(exercise)) {
+        const customValue = profile.maxes?.[key];
+        if (customValue != null && customValue > 0) {
+          // Use custom 1RM with adjustments
+          const adj = (profile.liftAdjustments && profile.liftAdjustments[liftKey]) ? Number(profile.liftAdjustments[liftKey]) : 0;
+          const capped = clamp(adj, -0.05, 0.05);
+          return customValue * (1 + capped);
+        }
+        // If no custom value, fall through to ratio calculation
+        break;
+      }
+    }
+  }
+  
+  if (shouldUseTrueMax(exerciseName)) {
+    // Use TRUE MAX for competition lifts and technical variations
+    const trueMax = (profile.maxes && profile.maxes[liftKey]) ? Number(profile.maxes[liftKey]) : 0;
+    
+    // v7.39 CRITICAL FIX: Ratio logic for complexes vs. singles
+    // For COMPLEXES: ratio determined by PRIMARY lift (liftKey)
+    // For SINGLES: ratio determined by exercise variation
+    let ratio = 1.0;
+    
+    if (isComplex(exerciseName)) {
+      // Complex exercises: ratio based on PRIMARY lift (liftKey)
+      // "Power Snatch + Snatch" with liftKey='snatch' → ratio = 1.0
+      // "Power Clean + Jerk" with liftKey='cj' → ratio = 1.0
+      // The limiting factor in a complex is the HARDEST component (the primary lift)
+      ratio = 1.0; // Always 1.0 for complexes (already has 5% complex reduction)
+    } else {
+      // Single exercises: ratio based on exercise name
+      // "Power Snatch" → ratio = 0.88
+      // "Hang Clean" → ratio = 0.95
+      if (nameLower.includes('power snatch')) ratio = 0.88;
+      else if (nameLower.includes('power clean')) ratio = 0.90;
+      else if (nameLower.includes('overhead squat')) ratio = 0.85;
+      else if (nameLower.includes('hang power snatch')) ratio = 0.80;
+      else if (nameLower.includes('hang snatch') && !nameLower.includes('power')) ratio = 0.95;
+      else if (nameLower.includes('hang clean') && !nameLower.includes('power')) ratio = 0.95;
+    }
+    
+    const adj = (profile.liftAdjustments && Number(profile.liftAdjustments[liftKey])) ? Number(profile.liftAdjustments[liftKey]) : 0;
+    const capped = clamp(adj, -0.05, 0.05);
+    return trueMax * ratio * (1 + capped);
+  } else {
+    // v7.10: This branch should never be hit now (everything uses TRUE MAX)
+    // Kept for safety - returns working max if somehow reached
+    return getAdjustedWorkingMax(profile, liftKey);
+  }
+}
+
+function computeCumulativeAdj(dayLog, exIndex, setIndex, scheme) {
+  let d = getWeightOffsetOverride(dayLog, exIndex);
+  for (let i = 0; i < setIndex; i++) {
+    if (scheme[i]?.tag !== 'work') continue;
+    const rec = dayLog[`${exIndex}:${i}`];
+    if (rec && rec.action) d += actionDelta(rec.action);
+  }
+  return d;
+}
+
+function buildSetScheme(ex, liftKey, profile) {
+  const sets = [];
+  // For accessories with recommendedPct but no pct, use recommendedPct
+  const targetPct = ex.pct || ex.recommendedPct || 0;
+  const wm = liftKey ? getBaseForExercise(ex.name, liftKey, profile) : 0;
+  const roundInc = profile.units === 'kg' ? 1 : 1;
+  const pushSet = (pct, reps, tag) => {
+    const w = (wm && pct) ? roundTo(wm * pct, roundInc) : 0;
+    sets.push({ targetPct: pct, targetReps: reps, tag, targetWeight: w });
+  };
+  const isPctBased = !!(targetPct && liftKey);
+  const isMainish = /snatch|clean|jerk|squat|pull/i.test(ex.name);
+  if (isPctBased && isMainish) {
+    const ladder = [0.40, 0.50, 0.60, 0.70].filter(v => v < targetPct - 0.02);
+    ladder.forEach((pct) => {
+      const reps = Math.min(3, Math.max(1, ex.reps));
+      pushSet(pct, reps, 'warmup');
+    });
+  }
+  for (let i = 0; i < ex.sets; i++) pushSet(targetPct, ex.reps, 'work');
+  return sets;
+}
+
+function getSetProgress(weekIndex, dayIndex, dayPlan) {
+  const p = getProfile();
+  const key = workoutKey(weekIndex, dayIndex);
+  const logs = ensureSetLogs();
+  const dayLog = logs[key] || {};
+  let total = 0;
+  let done = 0;
+  dayPlan.work.forEach((ex, exIndex) => {
+    const liftKey = ex.liftKey || dayPlan.liftKey;
+    const workSets = getWorkSetsOverride(dayLog, exIndex, ex.sets);
+    const scheme = buildSetScheme({ ...ex, sets: workSets }, liftKey, p);
+    total += scheme.length;
+    scheme.forEach((_, setIndex) => {
+      const rec = dayLog[`${exIndex}:${setIndex}`];
+      if (rec && rec.status && rec.status !== 'pending') done += 1;
+    });
+  });
+  return { done, total };
+}
+
+function openWorkoutDetail(weekIndex, dayIndex, dayPlan) {
+  const p = getProfile();
+  const overlay = $('workoutDetail');
+  const body = $('detailBody');
+  const title = $('detailTitle');
+  const meta = $('detailMeta');
+  if (!overlay || !body || !title || !meta) return;
+  ui.detailContext = { weekIndex, dayIndex };
+  
+  // v7.16 STAGE 5: Deload indicator
+  const phase = phaseForWeek(weekIndex);
+  const isDeload = phase === 'deload';
+  
+  title.textContent = `Day ${dayIndex + 1} • ${dayPlan.title}`;
+  
+  if (isDeload) {
+    meta.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="display:inline-flex; align-items:center; gap:8px;">
+          <span style="background:rgba(245,158,11,0.15); color:#f59e0b; padding:4px 10px; border-radius:6px; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">
+            🔋 DELOAD WEEK
+          </span>
+          <span style="opacity:0.7;">Week ${weekIndex + 1} • ${phase}</span>
+        </div>
+        <div style="font-size:12px; opacity:0.8; font-style:italic;">
+          Recovery focus: Lower volume & intensity by design
+        </div>
+      </div>
+    `;
+  } else {
+    meta.textContent = `Week ${weekIndex + 1} • ${phase} • ${p.programType || 'general'}`;
+  }
+  
+  body.innerHTML = '';
+  const key = workoutKey(weekIndex, dayIndex);
+  const logs = ensureSetLogs();
+  const dayLog = logs[key] || {};
+  logs[key] = dayLog;
+  const persist = () => {
+    state.setLogs = logs;
+    saveState();
+    renderWorkout();
+  };
+  dayPlan.work.forEach((ex, exIndex) => {
+    const liftKey = ex.liftKey || dayPlan.liftKey;
+    const workSets = getWorkSetsOverride(dayLog, exIndex, ex.sets);
+    const exEff = { ...ex, sets: workSets };
+    const scheme = buildSetScheme(exEff, liftKey, p);
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginBottom = '14px';
+    const head = document.createElement('div');
+    head.className = 'flex';
+    head.style.justifyContent = 'space-between';
+    head.style.alignItems = 'center';
+    
+    // v7.28: Calculate recommendation for accessories - Check saved weight FIRST
+    let recommendationText = '';
+    if (ex.recommendedPct && ex.recommendedPct > 0 && ex.liftKey) {
+      // Check if user has a saved weight for this exercise
+      const savedWeight = p.accessoryWeights?.[ex.name];
+      
+      if (savedWeight && savedWeight > 0) {
+        // Show saved weight (user has done this exercise before)
+        recommendationText = `<div style="margin-top:8px;padding:8px 12px;background:rgba(16,185,129,0.08);border-left:3px solid rgba(16,185,129,0.4);border-radius:6px;font-size:14px;line-height:1.5"><span style="font-weight:600;color:rgba(16,185,129,1)">Last used:</span> ${savedWeight}${p.units || 'kg'}</div>`;
+      } else {
+        // Show recommendation (first time doing this exercise)
+        const baseMax = getBaseForExercise(ex.name, ex.liftKey, p);
+        const recWeight = baseMax ? roundTo(baseMax * ex.recommendedPct, p.units === 'kg' ? 1 : 1) : 0;
+        
+        // Expand lift abbreviations for clarity
+        const liftNames = {
+          'snatch': 'Snatch',
+          'cj': 'Clean & Jerk',
+          'fs': 'Front Squat',
+          'bs': 'Back Squat',
+          'pushPress': 'Push Press',
+          'strictPress': 'Strict Press'
+        };
+        const fullLiftName = liftNames[ex.liftKey] || ex.liftKey;
+        const pctText = Math.round(ex.recommendedPct * 100);
+        
+        recommendationText = recWeight > 0 
+          ? `<div style="margin-top:8px;padding:8px 12px;background:rgba(59,130,246,0.08);border-left:3px solid rgba(59,130,246,0.4);border-radius:6px;font-size:14px;line-height:1.5"><span style="font-weight:600;color:rgba(59,130,246,1)">Recommended:</span> ${pctText}% of ${fullLiftName} <span style="opacity:0.8">(~${recWeight}${p.units || 'kg'})</span></div>` 
+          : (ex.description ? `<div style="margin-top:8px;padding:8px 12px;background:rgba(59,130,246,0.08);border-left:3px solid rgba(59,130,246,0.4);border-radius:6px;font-size:14px">${ex.description}</div>` : '');
+      }
+    } else if (ex.description) {
+      recommendationText = `<div style="margin-top:8px;padding:8px 12px;background:rgba(59,130,246,0.08);border-left:3px solid rgba(59,130,246,0.4);border-radius:6px;font-size:14px">${ex.description}</div>`;
+    }
+    
+    head.innerHTML = `
+      <div style="flex:1">
+        <div class="card-title"><span class="collapse-icon" style="margin-right:8px; user-select:none;">▼</span>${ex.name}</div>
+        <div class="card-subtitle">${workSets}×${ex.reps}${ex.pct && liftKey ? ` • ${Math.round(ex.pct*100)}%` : ''}${ex.targetRIR ? ` • RIR ${ex.targetRIR}` : ''}</div>
+        ${recommendationText}
+        <div data-rest-timer="ex${exIndex}" style="display:none; margin-top:10px; padding:12px 16px; background:rgba(59,130,246,0.15); border:2px solid rgba(59,130,246,0.5); border-radius:10px; font-size:20px; font-weight:700; text-align:center; letter-spacing:1px;"></div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+        <button class="primary" data-role="startTimer" style="min-width:90px; font-size:16px; font-weight:700; padding:10px 16px;">⏱ Start Rest</button>
+        <button class="danger small" data-role="cancelTimer" style="display:none; min-width:80px;">✕ Cancel</button>
+        <select class="quick-swap" data-role="swap"></select>
+        <button class="secondary small" data-role="minusSet">− Set</button>
+        <button class="secondary small" data-role="plusSet">+ Set</button>
+        <button class="danger small" data-role="removeEx" style="padding:4px 8px;">✕</button>
+      </div>
+    `;
+    const MAX_WORK_SETS = 12;
+    const applySetCountChange = (nextWorkSets) => {
+      const next = Math.max(1, Math.min(MAX_WORK_SETS, Math.floor(nextWorkSets)));
+      setWorkSetsOverride(dayLog, exIndex, next);
+      const nextScheme = buildSetScheme({ ...ex, sets: next }, liftKey, p);
+      Object.keys(dayLog).forEach((k) => {
+        if (!/^[0-9]+:[0-9]+$/.test(k)) return;
+        const [ei, si] = k.split(':').map(n => parseInt(n, 10));
+        if (ei === exIndex && si >= nextScheme.length) delete dayLog[k];
+      });
+      persist();
+      
+      // v7.42 CRITICAL FIX: Don't re-render entire modal - just update this card
+      // This prevents dropdown from closing when user clicks +/- Set
+      
+      // Update the subtitle with new set count
+      const subtitle = card.querySelector('.card-subtitle');
+      if (subtitle) {
+        subtitle.textContent = `${next}×${ex.reps}${ex.pct && liftKey ? ` • ${Math.round(ex.pct*100)}%` : ''}${ex.targetRIR ? ` • RIR ${ex.targetRIR}` : ''}`;
+      }
+      
+      // Rebuild ONLY the table body with new set count
+      tbody.innerHTML = '';
+      nextScheme.forEach((s, setIndex) => {
+        const recKey = `${exIndex}:${setIndex}`;
+        const rec = dayLog[recKey] || {};
+        const cumAdj = computeCumulativeAdj(dayLog, exIndex, setIndex, nextScheme);
+        const adjWeight = s.targetWeight ? roundTo(s.targetWeight * (1 + cumAdj), p.units === 'kg' ? 1 : 1) : 0;
+        const weightVal = (rec.weight != null && rec.weight !== '') ? rec.weight : (adjWeight || '');
+        const repsVal = (rec.reps != null && rec.reps !== '') ? rec.reps : (s.targetReps || '');
+        const rpeVal = (rec.rpe != null && rec.rpe !== '') ? rec.rpe : '';
+        const actionVal = rec.action || '';
+        const row = document.createElement('tr');
+        row.dataset.idx = String(setIndex);
+        row.innerHTML = `
+          <td style="padding:8px 6px; opacity:.9">${setIndex + 1}${s.tag === 'warmup' ? '<span style="opacity:.6">w</span>' : ''}</td>
+          <td style="padding:6px"><div style="display:flex; gap:8px; align-items:center;">
+            <input inputmode="decimal" class="input small" data-role="weight" placeholder="—" value="${weightVal}" />
+            <span style="opacity:.65; font-size:12px">${s.targetPct ? `${Math.round(s.targetPct*100)}%` : (s.tag || '')}</span>
+          </div></td>
+          <td style="padding:6px"><input inputmode="numeric" class="input small" data-role="reps" placeholder="—" value="${repsVal}" /></td>
+          <td style="padding:6px"><input inputmode="decimal" class="input small" data-role="rpe" placeholder="—" value="${rpeVal}" /></td>
+          <td style="padding:6px"><select class="input small" data-role="action">
+            <option value="">—</option><option value="make">✓</option><option value="belt">↑</option>
+            <option value="heavy">⚠︎</option><option value="miss">✕</option>
+          </select></td>
+        `;
+        
+        const wEl = row.querySelector('[data-role="weight"]');
+        const repsEl = row.querySelector('[data-role="reps"]');
+        const rpeEl = row.querySelector('[data-role="rpe"]');
+        const aEl = row.querySelector('[data-role="action"]');
+        
+        if (aEl) aEl.value = actionVal;
+        
+        // Re-attach all event listeners for this row
+        if (wEl) {
+          wEl.addEventListener('change', () => {
+            updateRec(setIndex, { weight: wEl.value, status: 'done' });
+            const entered = Number(wEl.value);
+            if (Number.isFinite(entered) && entered > 0 && nextScheme[setIndex]?.tag === 'work') {
+              for (let j = setIndex + 1; j < nextScheme.length; j++) {
+                if (nextScheme[j]?.tag !== 'work') continue;
+                const nextKey = `${exIndex}:${j}`;
+                const nextRec = dayLog[nextKey] || {};
+                if (nextRec.weight != null && nextRec.weight !== '') continue;
+                const nextRow = tbody.querySelector(`tr[data-idx="${j}"]`);
+                if (nextRow) {
+                  const nextWEl = nextRow.querySelector('[data-role="weight"]');
+                  if (nextWEl && !nextWEl.value) {
+                    nextWEl.value = String(entered);
+                    updateRec(j, { weight: entered });
+                  }
+                }
+              }
+            }
+            const firstWorkIdx = nextScheme.findIndex(x => x.tag === 'work');
+            if (nextScheme[setIndex]?.tag === 'work' && firstWorkIdx === setIndex) {
+              const prescribed = Number(adjWeight || s.targetWeight || 0);
+              if (Number.isFinite(entered) && entered > 0 && Number.isFinite(prescribed) && prescribed > 0) {
+                const off = clamp((entered / prescribed) - 1, -0.10, 0.10);
+                setWeightOffsetOverride(dayLog, exIndex, off);
+              }
+              if (ex.recommendedPct && ex.recommendedPct > 0 && !ex.pct && entered > 0 && nextScheme[setIndex]?.tag === 'work') {
+                if (!p.accessoryWeights) p.accessoryWeights = {};
+                p.accessoryWeights[ex.name] = entered;
+                saveState();
+              }
+            }
+          });
+        }
+        if (repsEl) {
+          repsEl.addEventListener('input', () => updateRec(setIndex, { reps: repsEl.value, status: 'done' }));
+        }
+        if (rpeEl) {
+          rpeEl.addEventListener('input', () => updateRec(setIndex, { rpe: rpeEl.value, status: 'done' }));
+        }
+        if (aEl) {
+          aEl.addEventListener('change', () => {
+            const actualWeight = Number(wEl.value);
+            updateRec(setIndex, { action: aEl.value, weight: actualWeight, status: 'done' });
+            if (nextScheme[setIndex]?.tag === 'work' && actualWeight > 0) {
+              const actionAdj = actionDelta(aEl.value);
+              let baseWeight = actualWeight * (1 + actionAdj);
+              for (let j = setIndex + 1; j < nextScheme.length; j++) {
+                if (nextScheme[j]?.tag !== 'work') continue;
+                const nextW = roundTo(baseWeight, p.units === 'kg' ? 1 : 1);
+                const nextRow = tbody.querySelector(`tr[data-idx="${j}"]`);
+                if (nextRow) {
+                  const nextWEl = nextRow.querySelector('[data-role="weight"]');
+                  if (nextWEl) {
+                    nextWEl.value = String(nextW);
+                    updateRec(j, { weight: nextW });
+                  }
+                }
+                baseWeight = nextW;
+              }
+            }
+          });
+        }
+        
+        tbody.appendChild(row);
+      });
+      
+      // Dropdown remains open - no re-render!
+    };
+    head.querySelector('[data-role="minusSet"]')?.addEventListener('click', (e) => { 
+      e.preventDefault(); 
+      applySetCountChange(workSets - 1); 
+    });
+    head.querySelector('[data-role="plusSet"]')?.addEventListener('click', (e) => { 
+      e.preventDefault(); 
+      applySetCountChange(workSets + 1); 
+    });
+    
+    // v7.16 STAGE 4: Rest timer button
+    const startBtn = head.querySelector('[data-role="startTimer"]');
+    const cancelBtn = head.querySelector('[data-role="cancelTimer"]');
+    
+    startBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Get user's preferred rest duration from profile (v7.19)
+      let restDuration = Number(p.restDuration) || 180; // Default 3 minutes
+      
+      // Override based on exercise intensity if user hasn't set preference
+      if (!p.restDuration) {
+        if (ex.pct && ex.pct >= 0.85) {
+          restDuration = 300; // 5 minutes for heavy lifts (85%+)
+        } else if (ex.pct && ex.pct <= 0.60) {
+          restDuration = 120; // 2 minutes for light/technique work
+        }
+      }
+      
+      startRestTimer(restDuration, `ex${exIndex}`);
+      
+      // Show cancel button, hide start button
+      if (startBtn) startBtn.style.display = 'none';
+      if (cancelBtn) cancelBtn.style.display = 'block';
+    });
+    
+    // v7.19: Cancel timer button
+    cancelBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      stopRestTimer();
+      
+      // Show start button, hide cancel button
+      if (startBtn) startBtn.style.display = 'block';
+      if (cancelBtn) cancelBtn.style.display = 'none';
+    });
+    
+    const swapEl = head.querySelector('[data-role="swap"]');
+    if (swapEl) {
+      const options = getSwapOptionsForExercise(ex, dayPlan);
+      swapEl.innerHTML = '';
+      options.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.name;
+        opt.textContent = o.name;
+        swapEl.appendChild(opt);
+      });
+      // Add "Custom..." option
+      const customOpt = document.createElement('option');
+      customOpt.value = '__CUSTOM__';
+      customOpt.textContent = 'Custom...';
+      swapEl.appendChild(customOpt);
+      
+      swapEl.value = ex.name;
+      swapEl.addEventListener('change', () => {
+        const chosenValue = String(swapEl.value || ex.name);
+        
+        // Handle custom exercise input
+        if (chosenValue === '__CUSTOM__') {
+          const customName = prompt('Enter custom exercise name:', '');
+          if (!customName || !customName.trim()) {
+            swapEl.value = ex.name; // Reset if cancelled
+            return;
+          }
+          const chosen = { name: customName.trim(), liftKey: '' };
+          try {
+            const wk = state.currentBlock?.weeks?.[weekIndex];
+            const dy = wk?.days?.[dayIndex];
+            if (dy && dy.work && dy.work[exIndex]) {
+              dy.work[exIndex] = { ...dy.work[exIndex], name: chosen.name, liftKey: chosen.liftKey };
+            }
+            clearExerciseLogs(dayLog, exIndex);
+            persist();
+            openWorkoutDetail(weekIndex, dayIndex, dy || dayPlan);
+          } catch (err) {
+            console.error('Swap error:', err);
+          }
+          return;
+        }
+        
+        // Handle normal swap
+        const chosenName = chosenValue;
+        if (!chosenName || chosenName === ex.name) return;
+        const chosen = options.find(o => o.name === chosenName) || { name: chosenName, liftKey };
+        try {
+          const wk = state.currentBlock?.weeks?.[weekIndex];
+          const dy = wk?.days?.[dayIndex];
+          if (dy && dy.work && dy.work[exIndex]) {
+            dy.work[exIndex] = { ...dy.work[exIndex], name: chosen.name, liftKey: chosen.liftKey || dy.work[exIndex].liftKey };
+          }
+          clearExerciseLogs(dayLog, exIndex);
+          persist();
+          openWorkoutDetail(weekIndex, dayIndex, dy || dayPlan);
+        } catch (err) {
+          console.warn('Swap failed', err);
+        }
+      });
+    }
+    const table = document.createElement('table');
+    table.className = 'set-table';
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    // v7.13 FIX #1: Remove Copy column (blocks view on mobile)
+    table.innerHTML = `<thead><tr><th>Set</th><th>Weight</th><th>Reps</th><th>RPE</th><th>Action</th></tr></thead><tbody></tbody>`;
+    const tbody = table.querySelector('tbody');
+    const updateRec = (setIndex, patch) => {
+      const recKey = `${exIndex}:${setIndex}`;
+      const prev = dayLog[recKey] || {};
+      dayLog[recKey] = { ...prev, ...patch };
+      persist();
+    };
+    scheme.forEach((s, setIndex) => {
+      const recKey = `${exIndex}:${setIndex}`;
+      const rec = dayLog[recKey] || {};
+      const cumAdj = computeCumulativeAdj(dayLog, exIndex, setIndex, scheme);
+      const adjWeight = s.targetWeight ? roundTo(s.targetWeight * (1 + cumAdj), p.units === 'kg' ? 1 : 1) : 0;
+      const weightVal = (rec.weight != null && rec.weight !== '') ? rec.weight : (adjWeight || '');
+      const repsVal = (rec.reps != null && rec.reps !== '') ? rec.reps : (s.targetReps || '');
+      const rpeVal = (rec.rpe != null && rec.rpe !== '') ? rec.rpe : '';
+      const actionVal = rec.action || '';
+      const row = document.createElement('tr');
+      row.dataset.idx = String(setIndex);
+      row.innerHTML = `
+        <td style="padding:8px 6px; opacity:.9">${setIndex + 1}${s.tag === 'warmup' ? '<span style="opacity:.6">w</span>' : ''}</td>
+        <td style="padding:6px"><div style="display:flex; gap:8px; align-items:center;">
+          <input inputmode="decimal" class="input small" data-role="weight" placeholder="—" />
+          <span style="opacity:.65; font-size:12px">${s.targetPct ? `${Math.round(s.targetPct*100)}%` : (s.tag || '')}</span>
+        </div></td>
+        <td style="padding:6px"><input inputmode="numeric" class="input small" data-role="reps" placeholder="—" /></td>
+        <td style="padding:6px"><input inputmode="decimal" class="input small" data-role="rpe" placeholder="—" /></td>
+        <td style="padding:6px"><select class="input small" data-role="action">
+          <option value="">—</option><option value="make">✓</option><option value="belt">↑</option>
+          <option value="heavy">⚠︎</option><option value="miss">✕</option>
+        </select></td>
+      `;
+      const wEl = row.querySelector('[data-role="weight"]');
+      const repsEl = row.querySelector('[data-role="reps"]');
+      const rpeEl = row.querySelector('[data-role="rpe"]');
+      const aEl = row.querySelector('[data-role="action"]');
+      
+      
+      if (wEl) { 
+        wEl.value = String(weightVal);
+        
+        // v7.12 FIX #1: Use 'change' instead of 'input' event
+        // Prevents bug where typing "50" shows: 50, 5, 5
+        // 'change' fires only when user finishes (blur or Enter)
+        wEl.addEventListener('change', () => {
+          updateRec(setIndex, { weight: wEl.value, status: 'done' });
+          
+          // Auto-fill subsequent EMPTY sets with user's entered weight
+          const entered = Number(wEl.value);
+          if (Number.isFinite(entered) && entered > 0 && scheme[setIndex]?.tag === 'work') {
+            for (let j = setIndex + 1; j < scheme.length; j++) {
+              if (scheme[j]?.tag !== 'work') continue;
+              const nextKey = `${exIndex}:${j}`;
+              const nextRec = dayLog[nextKey] || {};
+              // Only fill if empty
+              if (nextRec.weight != null && nextRec.weight !== '') continue;
+              const nextRow = tbody.querySelector(`tr[data-idx="${j}"]`);
+              if (nextRow) {
+                const nextWEl = nextRow.querySelector('[data-role="weight"]');
+                if (nextWEl && !nextWEl.value) {
+                  nextWEl.value = String(entered);
+                  updateRec(j, { weight: entered });
+                }
+              }
+            }
+          }
+          
+          // Also update offset if first set
+          const firstWorkIdx = scheme.findIndex(x => x.tag === 'work');
+          if (scheme[setIndex]?.tag === 'work' && firstWorkIdx === setIndex) {
+            const prescribed = Number(adjWeight || s.targetWeight || 0);
+            if (Number.isFinite(entered) && entered > 0 && Number.isFinite(prescribed) && prescribed > 0) {
+              const off = clamp((entered / prescribed) - 1, -0.10, 0.10);
+              setWeightOffsetOverride(dayLog, exIndex, off);
+            }
+            
+            // v7.28: Save accessory weight for future reference
+            // Only save if this is an accessory exercise (has recommendedPct but no pct)
+            if (ex.recommendedPct && ex.recommendedPct > 0 && !ex.pct && entered > 0) {
+              if (!p.accessoryWeights) p.accessoryWeights = {};
+              p.accessoryWeights[ex.name] = entered;
+              saveState();
+              console.log('💾 Saved accessory weight:', ex.name, '→', entered, p.units);
+            }
+          }
+        });
+      }
+      if (repsEl) { 
+        repsEl.value = String(repsVal); 
+        repsEl.addEventListener('input', () => updateRec(setIndex, { reps: repsEl.value, status: 'done' })); 
+      }
+      if (rpeEl) { 
+        rpeEl.value = String(rpeVal); 
+        rpeEl.addEventListener('input', () => updateRec(setIndex, { rpe: rpeEl.value, status: 'done' })); 
+      }
+      if (aEl) {
+        aEl.value = actionVal;
+        aEl.addEventListener('change', () => {
+          // v7.24 COMPLETE FIX: When action button clicked, calculate next sets from ACTUAL weight
+          const actualWeight = Number(wEl.value);
+          const prescribedWeight = scheme[setIndex]?.targetWeight || 0;
+          
+          // Save the action and actual weight
+          updateRec(setIndex, { 
+            action: aEl.value, 
+            weight: actualWeight,
+            status: 'done' 
+          });
+          
+          // Calculate next sets based on ACTUAL weight lifted, not prescribed
+          if (scheme[setIndex]?.tag === 'work' && actualWeight > 0) {
+            // Get the action adjustment percentage
+            const actionAdj = actionDelta(aEl.value);
+            
+            // Apply to ACTUAL weight, not prescribed
+            let baseWeight = actualWeight * (1 + actionAdj);
+            
+            // Update all subsequent work sets
+            for (let j = setIndex + 1; j < scheme.length; j++) {
+              if (scheme[j]?.tag !== 'work') continue;
+              
+              // Each subsequent set gets the action adjustment
+              const nextW = roundTo(baseWeight, p.units === 'kg' ? 1 : 1);
+              const nextRow = tbody.querySelector(`tr[data-idx="${j}"]`);
+              if (nextRow) {
+                const nextWEl = nextRow.querySelector('[data-role="weight"]');
+                if (nextWEl) {
+                  nextWEl.value = String(nextW);
+                  updateRec(j, { weight: nextW });
+                }
+              }
+              
+              // Next set starts from this weight
+              baseWeight = nextW;
+            }
+          }
+        });
+      }
+      
+      tbody.appendChild(row);
+    });
+    
+    // Remove exercise button
+    const removeBtn = head.querySelector('[data-role="removeEx"]');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Create modal with options
+        const modalHTML = `
+          <div style="padding:20px">
+            <h3 style="margin-top:0">${ex.name}</h3>
+            <p style="color:var(--text-dim);margin-bottom:20px">What would you like to do?</p>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <button class="btn primary" data-action="move" style="width:100%">Move to Another Day</button>
+              <button class="btn danger" data-action="delete" style="width:100%">Delete Exercise</button>
+              <button class="btn secondary" data-action="cancel" style="width:100%">Cancel</button>
+            </div>
+          </div>
+        `;
+        
+        // Show modal
+        openModal('Exercise Options', '', modalHTML);
+        
+        // Attach event listeners after modal is rendered (setTimeout to ensure DOM is ready)
+        setTimeout(() => {
+          const modalEl = $('modalContent');
+          if (!modalEl) return;
+          
+          // Move to another day
+          const moveBtn = modalEl.querySelector('[data-action="move"]');
+          if (moveBtn) {
+            moveBtn.addEventListener('click', () => {
+              const wk = state.currentBlock?.weeks?.[weekIndex];
+              if (!wk || !wk.days) return;
+              
+              // Build day selection
+              const dayOptions = wk.days.map((d, idx) => {
+                if (idx === dayIndex) return null; // Skip current day
+                return `Day ${idx + 1} - ${d.title}`;
+              }).filter(Boolean);
+              
+              if (dayOptions.length === 0) {
+                alert('No other days available');
+                return;
+              }
+              
+              const selection = prompt(`Move "${ex.name}" to:\n${dayOptions.map((o, i) => `${i + 1}. ${o}`).join('\n')}\n\nEnter number (1-${dayOptions.length}):`);
+              if (!selection) return;
+              
+              const selectedIdx = parseInt(selection) - 1;
+              if (selectedIdx < 0 || selectedIdx >= dayOptions.length) {
+                alert('Invalid selection');
+                return;
+              }
+              
+              // Find actual day index (accounting for skipped current day)
+              let targetDayIdx = 0;
+              let count = 0;
+              for (let i = 0; i < wk.days.length; i++) {
+                if (i === dayIndex) continue;
+                if (count === selectedIdx) {
+                  targetDayIdx = i;
+                  break;
+                }
+                count++;
+              }
+              
+              try {
+                const dy = wk.days[dayIndex];
+                const targetDay = wk.days[targetDayIdx];
+                
+                // Copy exercise to target day
+                const exerciseCopy = { ...ex };
+                targetDay.work.push(exerciseCopy);
+                
+                // Remove from current day
+                dy.work.splice(exIndex, 1);
+                clearExerciseLogs(dayLog, exIndex);
+                
+                persist();
+                $('modalOverlay')?.classList.remove('show');
+                openWorkoutDetail(weekIndex, dayIndex, dy || dayPlan);
+                notify(`Moved to ${targetDay.title}`);
+              } catch (err) {
+                console.error('Move failed:', err);
+                alert('Failed to move exercise');
+              }
+            });
+          }
+          
+          // Delete exercise
+          const deleteBtn = modalEl.querySelector('[data-action="delete"]');
+          if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+              // v7.42 FIX: More explicit warning about data loss
+              if (confirm(`⚠️ Permanently delete "${ex.name}"?\n\nThis will delete all logged sets, weights, and notes for this exercise.\n\nThis action cannot be undone.`)) {
+                try {
+                  const wk = state.currentBlock?.weeks?.[weekIndex];
+                  const dy = wk?.days?.[dayIndex];
+                  if (dy && dy.work) {
+                    dy.work.splice(exIndex, 1);
+                    clearExerciseLogs(dayLog, exIndex);
+                    persist();
+                    $('modalOverlay')?.classList.remove('show');
+                    openWorkoutDetail(weekIndex, dayIndex, dy || dayPlan);
+                    notify('Exercise deleted');
+                  }
+                } catch (err) {
+                  console.error('Delete failed:', err);
+                }
+              }
+            });
+          }
+          
+          // Cancel
+          const cancelBtn = modalEl.querySelector('[data-action="cancel"]');
+          if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+              $('modalOverlay')?.classList.remove('show');
+            });
+          }
+        }, 100); // 100ms delay to ensure modal is fully rendered
+      });
+    }
+    const collapseIcon = head.querySelector('.collapse-icon');
+    let isCollapsed = true; // Start collapsed
+    table.style.display = 'none'; // Hide by default
+    head.style.cursor = 'pointer';
+    head.addEventListener('click', (e) => {
+      // Don't collapse when clicking dropdown or buttons
+      if (e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'OPTION') return;
+      
+      isCollapsed = !isCollapsed;
+      table.style.display = isCollapsed ? 'none' : 'table';
+      if (collapseIcon) collapseIcon.textContent = isCollapsed ? '▶' : '▼';
+    });
+    
+    card.appendChild(head);
+    card.appendChild(table);
+    body.appendChild(card);
+  });
+  
+  // v7.15 STAGE 3: Volume Summary
+  const summaryCard = document.createElement('div');
+  summaryCard.className = 'card';
+  summaryCard.style.marginBottom = '14px';
+  summaryCard.style.background = 'rgba(59,130,246,0.05)';
+  summaryCard.style.border = '1px solid rgba(59,130,246,0.3)';
+  
+  // Calculate volume stats
+  let totalSets = 0;
+  let workSets = 0;
+  let totalReps = 0;
+  let totalTonnage = 0;
+  let intensitySum = 0;
+  let intensityCount = 0;
+  
+  dayPlan.work.forEach((ex, exIndex) => {
+    const liftKey = ex.liftKey || dayPlan.liftKey;
+    const workSetsCount = getWorkSetsOverride(dayLog, exIndex, ex.sets);
+    const exEff = { ...ex, sets: workSetsCount };
+    const scheme = buildSetScheme(exEff, liftKey, p);
+    
+    scheme.forEach((s, setIndex) => {
+      totalSets++;
+      if (s.tag === 'work') {
+        workSets++;
+        const recKey = `${exIndex}:${setIndex}`;
+        const rec = dayLog[recKey] || {};
+        const reps = Number(rec.reps) || 0;
+        const weight = Number(rec.weight) || 0;
+        
+        if (reps > 0) {
+          totalReps += reps;
+          if (weight > 0) {
+            totalTonnage += weight * reps;
+          }
+        }
+        
+        if (s.targetPct) {
+          intensitySum += s.targetPct * 100;
+          intensityCount++;
+        }
+      }
+    });
+  });
+  
+  const avgIntensity = intensityCount > 0 ? Math.round(intensitySum / intensityCount) : 0;
+  
+  summaryCard.innerHTML = `
+    <div style="padding:16px;">
+      <div style="font-weight:700; font-size:15px; margin-bottom:12px; color:var(--primary);">
+        📊 Workout Summary
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:12px;">
+        <div>
+          <div style="font-size:11px; opacity:0.7; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Total Sets</div>
+          <div style="font-size:24px; font-weight:700;">${totalSets}</div>
+          <div style="font-size:11px; opacity:0.6;">${workSets} work sets</div>
+        </div>
+        <div>
+          <div style="font-size:11px; opacity:0.7; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Total Reps</div>
+          <div style="font-size:24px; font-weight:700;">${totalReps}</div>
+        </div>
+        <div>
+          <div style="font-size:11px; opacity:0.7; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Tonnage</div>
+          <div style="font-size:24px; font-weight:700;">${Math.round(totalTonnage)}</div>
+          <div style="font-size:11px; opacity:0.6;">${p.units || 'kg'}</div>
+        </div>
+        ${avgIntensity > 0 ? `
+        <div>
+          <div style="font-size:11px; opacity:0.7; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Avg Intensity</div>
+          <div style="font-size:24px; font-weight:700;">${avgIntensity}%</div>
+        </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+  body.appendChild(summaryCard);
+  
+  // Add "Add Exercise" button at the bottom
+  const addExCard = document.createElement('div');
+  addExCard.className = 'card';
+  addExCard.style.marginBottom = '14px';
+  addExCard.style.cursor = 'pointer';
+  addExCard.style.border = '2px dashed rgba(59, 130, 246, 1)';
+  addExCard.innerHTML = `
+    <div style="padding:16px; text-align:center; color:var(--primary); font-weight:600;">
+      + Add Exercise
+    </div>
+  `;
+  addExCard.addEventListener('click', () => {
+    const exerciseName = prompt('Exercise name:');
+    if (!exerciseName || !exerciseName.trim()) return;
+    
+    const sets = prompt('Number of sets:', '3');
+    if (!sets) return;
+    
+    const reps = prompt('Number of reps:', '10');
+    if (!reps) return;
+    
+    try {
+      const wk = state.currentBlock?.weeks?.[weekIndex];
+      const dy = wk?.days?.[dayIndex];
+      if (dy && dy.work) {
+        dy.work.push({
+          name: exerciseName.trim(),
+          sets: Number(sets) || 3,
+          reps: Number(reps) || 10,
+          pct: 0,
+          liftKey: '',
+          tag: 'custom'
+        });
+        persist();
+        openWorkoutDetail(weekIndex, dayIndex, dy || dayPlan);
+        notify('Exercise added');
+      }
+    } catch (err) {
+      console.error('Add exercise failed:', err);
+    }
+  });
+  body.appendChild(addExCard);
+  
+  overlay.classList.add('show');
+}
+
+function bindWorkoutDetailControls() {
+  const btnClose = $('btnCloseDetail');
+  if (btnClose) {
+    btnClose.replaceWith(btnClose.cloneNode(true));
+    $('btnCloseDetail')?.addEventListener('click', () => {
+      stopRestTimer(); // v7.16: Clean up timer
+      $('workoutDetail')?.classList.remove('show');
+    });
+  }
+  const btnComplete = $('btnComplete');
+  if (btnComplete) {
+    btnComplete.replaceWith(btnComplete.cloneNode(true));
+    $('btnComplete')?.addEventListener('click', () => {
+      const ctx = ui.detailContext;
+      if (!ctx || ctx.weekIndex == null || ctx.dayIndex == null) return;
+      const block = state.currentBlock;
+      const day = block?.weeks?.[ctx.weekIndex]?.days?.[ctx.dayIndex];
+      if (day) completeDay(ctx.weekIndex, ctx.dayIndex, day);
+      $('workoutDetail')?.classList.remove('show');
+    });
+  }
+}
+
+function bindReadinessModal() {
+  const sleepSlider = $('sleepSlider');
+  const sleepValue = $('sleepValue');
+  if (sleepSlider && sleepValue) {
+    sleepSlider.addEventListener('input', () => {
+      sleepValue.textContent = sleepSlider.value;
+      updateReadinessScore();
+    });
+  }
+  const scales = ['sleepQuality', 'stress', 'soreness', 'readiness'];
+  scales.forEach(scaleId => {
+    const scaleDiv = $(`${scaleId}Scale`);
+    if (!scaleDiv) return;
+    scaleDiv.addEventListener('click', (e) => {
+      const btn = e.target.closest('.readiness-btn');
+      if (!btn) return;
+      const val = Number(btn.dataset.val);
+      const valueDisplay = $(`${scaleId}Value`);
+      if (valueDisplay) valueDisplay.textContent = val;
+      scaleDiv.querySelectorAll('.readiness-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      updateReadinessScore();
+    });
+  });
+}
+
+function updateReadinessScore() {
+  const sleep = Number($('sleepSlider')?.value || 7);
+  const quality = Number($('sleepQualityValue')?.textContent || 3);
+  const stress = Number($('stressValue')?.textContent || 3);
+  const soreness = Number($('sorenessValue')?.textContent || 3);
+  const readiness = Number($('readinessValueDisplay')?.textContent || 3);
+  const score = ((sleep/2) + quality + (6-stress) + (6-soreness) + readiness) / 5;
+  const scoreRounded = Math.round(score * 10) / 10;
+  const scoreNum = $('readinessScoreNum');
+  if (scoreNum) scoreNum.textContent = scoreRounded.toFixed(1);
+  const scoreSummary = $('readinessScoreSummary');
+  if (scoreSummary) {
+    scoreSummary.className = 'readiness-score';
+    if (scoreRounded < 2.5) scoreSummary.classList.add('low');
+    else if (scoreRounded < 3.5) scoreSummary.classList.add('med');
+    else scoreSummary.classList.add('high');
+  }
+  const hint = $('readinessHint');
+  if (hint) {
+    if (scoreRounded < 2.5) hint.textContent = 'Low readiness - reduce volume';
+    else if (scoreRounded < 3.5) hint.textContent = 'Moderate readiness';
+    else hint.textContent = 'High readiness - push hard';
+  }
+}
+
+function renderSetup() {
+  const sel = $('setupProfileSelect');
+  if (sel) {
+    sel.innerHTML = '';
+    Object.keys(state.profiles).forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      if (name === state.activeProfile) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+  const p = getProfile();
+  if ($('setupUnits')) $('setupUnits').value = p.units || 'kg';
+  if ($('setupBlockLength')) $('setupBlockLength').value = String(p.blockLength || 8);
+  if ($('setupProgram')) $('setupProgram').value = p.programType || 'general';
+  if ($('setupTransitionWeeks')) $('setupTransitionWeeks').value = String(p.transitionWeeks ?? 1);
+  if ($('setupTransitionProfile')) $('setupTransitionProfile').value = p.transitionProfile || 'standard';
+  if ($('setupPrefPreset')) $('setupPrefPreset').value = p.prefPreset || 'balanced';
+  if ($('setupAthleteMode')) $('setupAthleteMode').value = p.athleteMode || 'recreational';
+  if ($('setupIncludeBlocks')) $('setupIncludeBlocks').value = p.includeBlocks ? 'yes' : 'no';
+  if ($('setupVolumePref')) $('setupVolumePref').value = p.volumePref || 'reduced';
+  if ($('setupDuration')) $('setupDuration').value = String(p.duration || 75);
+  if ($('setupRestDuration')) $('setupRestDuration').value = String(p.restDuration || 180); // v7.19
+  if ($('setupAutoCut')) $('setupAutoCut').value = p.autoCut !== false ? 'yes' : 'no';
+  if ($('setupAge')) $('setupAge').value = p.age || '';
+  if ($('setupTrainingAge')) $('setupTrainingAge').value = String(p.trainingAge || 1);
+  if ($('setupRecovery')) $('setupRecovery').value = String(p.recovery || 3);
+  if ($('setupLimiter')) $('setupLimiter').value = p.limiter || 'balanced';
+  if ($('setupCompetitionDate')) $('setupCompetitionDate').value = p.competitionDate || '';
+  if ($('setupMacroPeriod')) $('setupMacroPeriod').value = p.macroPeriod || 'AUTO';
+  if ($('setupTaperStyle')) $('setupTaperStyle').value = p.taperStyle || 'default';
+  if ($('setupHeavySingleExposure')) $('setupHeavySingleExposure').value = p.heavySingleExposure || 'off';
+  const injuries = Array.isArray(p.injuries) ? p.injuries : [];
+  if ($('setupInjuryPreset')) {
+    if (injuries.length === 0) $('setupInjuryPreset').value = 'none';
+    else if (injuries.length === 1) $('setupInjuryPreset').value = injuries[0];
+    else $('setupInjuryPreset').value = 'multiple';
+  }
+  const injuryGrid = $('injuryAdvancedGrid');
+  const injuryHint = $('injuryAdvancedHint');
+  if (injuries.length > 1) {
+    if (injuryGrid) injuryGrid.style.display = 'block';
+    if (injuryHint) injuryHint.style.display = 'block';
+    if ($('injShoulder')) $('injShoulder').checked = injuries.includes('shoulder');
+    if ($('injWrist')) $('injWrist').checked = injuries.includes('wrist');
+    if ($('injElbow')) $('injElbow').checked = injuries.includes('elbow');
+    if ($('injBack')) $('injBack').checked = injuries.includes('back');
+    if ($('injHip')) $('injHip').checked = injuries.includes('hip');
+    if ($('injKnee')) $('injKnee').checked = injuries.includes('knee');
+    if ($('injAnkle')) $('injAnkle').checked = injuries.includes('ankle');
+  } else {
+    if (injuryGrid) injuryGrid.style.display = 'none';
+    if (injuryHint) injuryHint.style.display = 'none';
+  }
+  if ($('setupSnatch')) $('setupSnatch').value = p.maxes?.snatch ?? '';
+  if ($('setupCleanJerk')) $('setupCleanJerk').value = p.maxes?.cj ?? '';
+  if ($('setupFrontSquat')) $('setupFrontSquat').value = p.maxes?.fs ?? '';
+  if ($('setupBackSquat')) $('setupBackSquat').value = p.maxes?.bs ?? '';
+  if ($('setupPushPress')) $('setupPushPress').value = p.maxes?.pushPress || '';
+  if ($('setupStrictPress')) $('setupStrictPress').value = p.maxes?.strictPress || '';
+  
+  // Load optional custom 1RMs
+  if ($('setupPowerSnatch')) $('setupPowerSnatch').value = p.maxes?.powerSnatch || '';
+  if ($('setupPowerClean')) $('setupPowerClean').value = p.maxes?.powerClean || '';
+  if ($('setupOHS')) $('setupOHS').value = p.maxes?.ohs || '';
+  if ($('setupHangSnatch')) $('setupHangSnatch').value = p.maxes?.hangSnatch || '';
+  if ($('setupHangPowerSnatch')) $('setupHangPowerSnatch').value = p.maxes?.hangPowerSnatch || '';
+  if ($('setupHangClean')) $('setupHangClean').value = p.maxes?.hangClean || '';
+  
+  // Add event listeners to update auto-calc displays
+  setTimeout(() => {
+    ['setupSnatch', 'setupCleanJerk'].forEach(id => {
+      const field = $(id);
+      if (field) {
+        field.addEventListener('input', updateAutoCalcDisplays);
+      }
+    });
+    updateAutoCalcDisplays();
+  }, 100);
+  
+  if (!Array.isArray(p.mainDays)) p.mainDays = [];  // v7.13: Empty by default
+  if (!Array.isArray(p.accessoryDays)) p.accessoryDays = [];  // v7.13: Empty by default
+  syncDaySelectorUI();
+}
+
+function renderDashboard() {
+  const p = getProfile();
+  const subtitle = $('dashboardSubtitle');
+  if (subtitle) {
+    subtitle.textContent = `${p.programType || 'general'} • ${p.units || 'kg'} • Block ${state.currentBlock ? 'ready' : 'not generated'}`;
+  }
+  const stats = $('dashboardStats');
+  if (stats) {
+    stats.innerHTML = '';
+    const items = [];
+    const block = state.currentBlock;
+    if (block) {
+      items.push(['Block length', `${block.blockLength} weeks`]);
+      items.push(['Current week', `${ui.weekIndex + 1}`]);
+      items.push(['Phase', `${block.weeks?.[ui.weekIndex]?.phase || '—'}`]);
+    } else {
+      items.push(['Block', 'Not generated']);
+    }
+    items.forEach(([k, v]) => {
+      const d = document.createElement('div');
+      d.className = 'stat-card';
+      d.innerHTML = `<div class="stat-label">${k}</div><div class="stat-value">${v}</div>`;
+      stats.appendChild(d);
+    });
+  }
+  const maxGrid = $('dashboardMaxes');
+  if (maxGrid) {
+    maxGrid.innerHTML = '';
+    const wm = p.workingMaxes || computeWorkingMaxes(p.maxes || {});
+    const tiles = [
+      ['Snatch', wm.snatch],
+      ['Clean & Jerk', wm.cj],
+      ['Front Squat', wm.fs],
+      ['Back Squat', wm.bs]
+    ];
+    tiles.forEach(([label, val]) => {
+      const d = document.createElement('div');
+      d.className = 'stat-card';
+      d.innerHTML = `<div class="stat-label">${label}</div><div class="stat-value">${val || '—'} <span class="stat-unit">${p.units}</span></div>`;
+      maxGrid.appendChild(d);
+    });
+  }
+}
+
+function renderWorkout() {
+  const block = state.currentBlock;
+  const p = getProfile();
+  const blockSubtitle = $('blockSubtitle');
+  if (blockSubtitle) {
+    blockSubtitle.textContent = block ? `${block.programType} • started ${block.startDateISO}` : 'No block yet. Go to Setup.';
+  }
+  const weekCurrent = $('weekCurrent');
+  if (weekCurrent) weekCurrent.textContent = `Week ${ui.weekIndex + 1}`;
+  const weekStats = $('weekStats');
+  const weekProgress = $('weekProgress');
+  const weekCalendar = $('weekCalendar');
+  if (!block || !block.weeks || !block.weeks.length) {
+    if (weekStats) weekStats.innerHTML = '';
+    if (weekProgress) weekProgress.style.width = '0%';
+    if (weekCalendar) {
+      weekCalendar.innerHTML = `<div class="card" style="background:rgba(17,24,39,.5)"><div class="card-title">No active training block</div><div class="card-subtitle">Go to Setup to generate.</div></div>`;
+    }
+    return;
+  }
+  ui.weekIndex = clamp(ui.weekIndex, 0, block.weeks.length - 1);
+  const w = block.weeks[ui.weekIndex];
+  if (weekStats) {
+    weekStats.innerHTML = '';
+    const items = [
+      ['Phase', w.phase],
+      ['Intensity', `${Math.round(w.intensity * 100)}%`],
+      ['Volume', `${Math.round(w.volFactor * 100)}%`]
+    ];
+    items.forEach(([k, v]) => {
+      const d = document.createElement('div');
+      d.className = 'stat-card';
+      d.innerHTML = `<div class="stat-label">${k}</div><div class="stat-value">${v}</div>`;
+      weekStats.appendChild(d);
+    });
+  }
+  const completed = countCompletedForWeek(ui.weekIndex);
+  const pct = Math.round((completed / 4) * 100);
+  if (weekProgress) weekProgress.style.width = `${pct}%`;
+  if (weekCalendar) {
+    weekCalendar.innerHTML = '';
+    
+    // Group and sort days by type and day of week
+    const mainDays = w.days.filter(d => d.kind !== 'accessory').sort((a, b) => a.dow - b.dow);
+    const accessoryDays = w.days.filter(d => d.kind === 'accessory').sort((a, b) => a.dow - b.dow);
+    
+    // Day of week names
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    // v7.34: Detect today's day of week (0 = Sunday, 6 = Saturday)
+    const todayDOW = new Date().getDay();
+    
+    // v7.34: Helper to estimate workout duration
+    const estimateDuration = (day) => {
+      const exerciseCount = day.work.length;
+      const hasOlympic = day.work.some(ex => 
+        ex.name.toLowerCase().includes('snatch') || 
+        ex.name.toLowerCase().includes('clean') ||
+        ex.name.toLowerCase().includes('jerk')
+      );
+      
+      // Olympic lifts take longer (more rest, technique)
+      if (hasOlympic) {
+        return exerciseCount >= 5 ? '90 min' : exerciseCount >= 3 ? '75 min' : '60 min';
+      }
+      return exerciseCount >= 4 ? '60 min' : '45 min';
+    };
+    
+    // Helper function to render a day card
+    const renderDayCard = (day, dayIndex, isAccessory = false, isToday = false) => {
+      const isDone = isDayCompleted(ui.weekIndex, dayIndex);
+      const card = document.createElement('div');
+      card.className = `day-card-v2 ${isDone ? 'completed' : ''}`;
+      if (isAccessory) card.style.borderLeft = '3px solid #8b5cf6';
+      
+      const header = document.createElement('div');
+      header.className = 'day-card-header';
+      const badgeColor = isAccessory ? '#8b5cf6' : 'var(--primary)';
+      
+      // v7.33: Get readiness for this specific workout
+      const workoutKey = `${ui.weekIndex}_${dayIndex}`;
+      const readinessScore = (state.workoutReadiness && state.workoutReadiness[workoutKey]) || null;
+      const readinessEmoji = readinessScore ? 
+        (readinessScore < 2.5 ? '😴' : readinessScore < 3.5 ? '😐' : '💪') : '⚡';
+      const readinessColor = readinessScore ?
+        (readinessScore < 2.5 ? '#ef4444' : readinessScore < 3.5 ? '#f59e0b' : '#10b981') : '#6b7280';
+      const readinessLabel = readinessScore ?
+        (readinessScore < 2.5 ? 'Low' : readinessScore < 3.5 ? 'Normal' : 'High') : '';
+      
+      // v7.34: Estimate duration and decide if expanded
+      const duration = estimateDuration(day);
+      const shouldExpand = isToday && !isDone;
+      
+      header.innerHTML = `
+        <div class="day-header-left">
+          <div class="day-number">${dayNames[day.dow % 7]}</div>
+          <div class="mini-badge ${isAccessory ? '' : 'primary'}">${day.title}</div>
+        </div>
+        <div class="day-header-right">
+          ${!isDone ? `<button class="readiness-btn-mini" data-week="${ui.weekIndex}" data-day="${dayIndex}" style="background:${readinessColor};border:none;padding:4px 8px;border-radius:4px;font-size:12px;cursor:pointer;margin-right:8px;font-weight:600;color:#fff" title="Set readiness">${readinessEmoji}${readinessLabel ? ' ' + readinessLabel : ''}</button>` : ''}
+          <div class="day-stats" style="font-size:12px;color:#9ca3af;margin-right:8px">${duration}</div>
+          <div class="day-stats">${isDone ? 'Completed' : shouldExpand ? 'Today' : 'Tap to view'}</div>
+          <div class="expand-icon">${shouldExpand ? '▴' : '▾'}</div>
+        </div>
+      `;
+      
+      const body = document.createElement('div');
+      body.className = 'day-card-body';
+      
+      // v7.34: Show exercises with working weights if expanded
+      if (shouldExpand) {
+        body.style.display = 'block';
+        const exerciseList = document.createElement('div');
+        exerciseList.className = 'exercise-list';
+        
+        // Get profile for weight calculations
+        const profile = getProfile();
+        const maxes = profile.maxes;
+        
+        exerciseList.innerHTML = day.work.slice(0, 5).map(ex => {
+          const setsReps = `${ex.sets}×${ex.reps}`;
+          const pctStr = ex.pct > 0 ? `${Math.round(ex.pct * 100)}%` : '';
+          
+          // Calculate working weight
+          let weightStr = '';
+          if (ex.pct > 0 && ex.liftKey && maxes[ex.liftKey]) {
+            const workingWeight = Math.round(ex.pct * maxes[ex.liftKey]);
+            weightStr = `(${workingWeight}kg)`;
+          }
+          
+          return `<div class="ex-summary" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div style="flex:1">
+              <div style="font-weight:600;color:#fff;margin-bottom:2px">${ex.name}</div>
+              <div style="font-size:12px;color:#9ca3af">${setsReps} ${pctStr ? '@ ' + pctStr : ''} ${weightStr}</div>
+            </div>
+          </div>`;
+        }).join('');
+        
+        if (day.work.length > 5) {
+          exerciseList.innerHTML += `<div style="padding:8px 0;font-size:12px;color:#9ca3af">+ ${day.work.length - 5} more exercises</div>`;
+        }
+        
+        body.appendChild(exerciseList);
+      } else {
+        // Collapsed: just show exercise names
+        body.style.display = 'none';
+        const exercises = document.createElement('div');
+        exercises.className = 'exercise-list';
+        exercises.innerHTML = day.work.map(e => `<div class="ex-summary">${e.name}</div>`).join('');
+        body.appendChild(exercises);
+      }
+      
+      const actions = document.createElement('div');
+      actions.className = 'day-card-actions';
+      actions.style.display = shouldExpand ? 'flex' : 'none';
+      
+      const btnComplete = document.createElement('button');
+      btnComplete.className = 'btn-mini success';
+      btnComplete.textContent = isDone ? 'Completed' : 'Complete';
+      btnComplete.disabled = isDone;
+      btnComplete.addEventListener('click', (e) => {
+        e.stopPropagation();
+        completeDay(ui.weekIndex, dayIndex, day);
+      });
+      
+      const btnView = document.createElement('button');
+      btnView.className = 'btn-mini secondary';
+      btnView.textContent = 'Full Details';
+      btnView.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openWorkoutDetail(ui.weekIndex, dayIndex, day);
+      });
+      
+      actions.appendChild(btnView);
+      actions.appendChild(btnComplete);
+      body.appendChild(actions);
+      
+      header.addEventListener('click', () => {
+        // v7.34: Toggle expand/collapse
+        const isExpanded = body.style.display !== 'none';
+        if (isExpanded) {
+          body.style.display = 'none';
+          header.querySelector('.expand-icon').textContent = '▾';
+          actions.style.display = 'none';
+        } else {
+          body.style.display = 'block';
+          header.querySelector('.expand-icon').textContent = '▴';
+          actions.style.display = 'flex';
+          
+          // Re-render exercises with weights if not already done
+          if (!body.querySelector('.ex-summary[style*="display:flex"]')) {
+            const profile = getProfile();
+            const maxes = profile.maxes;
+            const exerciseList = body.querySelector('.exercise-list');
+            
+            exerciseList.innerHTML = day.work.slice(0, 5).map(ex => {
+              const setsReps = `${ex.sets}×${ex.reps}`;
+              const pctStr = ex.pct > 0 ? `${Math.round(ex.pct * 100)}%` : '';
+              
+              let weightStr = '';
+              if (ex.pct > 0 && ex.liftKey && maxes[ex.liftKey]) {
+                const workingWeight = Math.round(ex.pct * maxes[ex.liftKey]);
+                weightStr = `(${workingWeight}kg)`;
+              }
+              
+              return `<div class="ex-summary" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+                <div style="flex:1">
+                  <div style="font-weight:600;color:#fff;margin-bottom:2px">${ex.name}</div>
+                  <div style="font-size:12px;color:#9ca3af">${setsReps} ${pctStr ? '@ ' + pctStr : ''} ${weightStr}</div>
+                </div>
+              </div>`;
+            }).join('');
+            
+            if (day.work.length > 5) {
+              exerciseList.innerHTML += `<div style="padding:8px 0;font-size:12px;color:#9ca3af">+ ${day.work.length - 5} more exercises</div>`;
+            }
+          }
+        }
+      });
+      
+      // v7.33: Readiness button handler
+      const readinessBtn = header.querySelector('.readiness-btn-mini');
+      if (readinessBtn) {
+        readinessBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openWorkoutReadinessModal(ui.weekIndex, dayIndex, day);
+        });
+      }
+      
+      card.appendChild(header);
+      card.appendChild(body);
+      return card;
+    };
+    
+    // v7.34: Separate today from other days
+    const todayMainDays = mainDays.filter(day => day.dow === todayDOW);
+    const otherMainDays = mainDays.filter(day => day.dow !== todayDOW);
+    const todayAccessoryDays = accessoryDays.filter(day => day.dow === todayDOW);
+    const otherAccessoryDays = accessoryDays.filter(day => day.dow !== todayDOW);
+    
+    // Render TODAY section (if any workouts today)
+    if (todayMainDays.length > 0 || todayAccessoryDays.length > 0) {
+      const todayHeader = document.createElement('div');
+      todayHeader.innerHTML = '<div style="font-size:16px;font-weight:700;color:var(--primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:8px"><span>🔥</span><span>TODAY</span></div>';
+      weekCalendar.appendChild(todayHeader);
+      
+      todayMainDays.forEach((day) => {
+        const dayIndex = w.days.indexOf(day);
+        weekCalendar.appendChild(renderDayCard(day, dayIndex, false, true));
+      });
+      
+      todayAccessoryDays.forEach((day) => {
+        const dayIndex = w.days.indexOf(day);
+        weekCalendar.appendChild(renderDayCard(day, dayIndex, true, true));
+      });
+    }
+    
+    // Render THIS WEEK section (other days)
+    if (otherMainDays.length > 0 || otherAccessoryDays.length > 0) {
+      const weekHeader = document.createElement('div');
+      weekHeader.innerHTML = '<div style="font-size:14px;font-weight:600;color:#9ca3af;margin:24px 0 12px 0;text-transform:uppercase;letter-spacing:0.5px">THIS WEEK</div>';
+      weekCalendar.appendChild(weekHeader);
+      
+      // Render main days section
+      if (otherMainDays.length > 0) {
+        otherMainDays.forEach((day) => {
+          const dayIndex = w.days.indexOf(day);
+          weekCalendar.appendChild(renderDayCard(day, dayIndex, false, false));
+        });
+      }
+      
+      // Render accessory days
+      if (otherAccessoryDays.length > 0) {
+        otherAccessoryDays.forEach((day) => {
+          const dayIndex = w.days.indexOf(day);
+          weekCalendar.appendChild(renderDayCard(day, dayIndex, true, false));
+        });
+      }
+    }
+    
+    // If no workouts today, show all normally with section headers
+    if (todayMainDays.length === 0 && todayAccessoryDays.length === 0) {
+      // Render main days section
+      if (mainDays.length > 0) {
+        const mainHeader = document.createElement('div');
+        mainHeader.innerHTML = '<div style="font-size:14px;font-weight:600;color:var(--primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">Main Training Days</div>';
+        weekCalendar.appendChild(mainHeader);
+        
+        mainDays.forEach((day) => {
+          const dayIndex = w.days.indexOf(day);
+          weekCalendar.appendChild(renderDayCard(day, dayIndex, false, false));
+        });
+      }
+      
+      // Render accessory days section
+      if (accessoryDays.length > 0) {
+        const accHeader = document.createElement('div');
+        accHeader.innerHTML = '<div style="font-size:14px;font-weight:600;color:#8b5cf6;margin:24px 0 12px 0;text-transform:uppercase;letter-spacing:0.5px">Accessory Days</div>';
+        weekCalendar.appendChild(accHeader);
+        
+        accessoryDays.forEach((day) => {
+          const dayIndex = w.days.indexOf(day);
+          weekCalendar.appendChild(renderDayCard(day, dayIndex, true, false));
+        });
+      }
     }
 
-    // -------------------- Split templates --------------------
-    // Day pattern “slots” (roles). Slots are satisfied via scoring solver.
-    // -------------------- Volume landmarks (MEV→MAV) --------------------
-    // Muscles tracked in this generator (kept simple; extended tracking requires richer tagging)
-    const MUSCLES = ['chest', 'back', 'lats', 'front_delts', 'side_delts', 'rear_delts', 'biceps', 'triceps', 'quads', 'hamstrings', 'glutes', 'calves'];
-    const LANDMARKS = {
-        Beginner: { MEV: 6, MAV: 11, MRV: 16 },
-        Intermediate: { MEV: 8, MAV: 15, MRV: 22 },
-        Advanced: { MEV: 8, MAV: 16, MRV: 24 }
-    };
-    // Per-week ramp inside a 4-week block (1–3 accumulate, 4 deload)
-    function weekRampInBlock(weekInBlock) {
-        if (weekInBlock === 4)
-            return { volMult: 0.5, deload: true };
-        if (weekInBlock === 3)
-            return { volMult: 1.25, deload: false };
-        if (weekInBlock === 2)
-            return { volMult: 1.12, deload: false };
-        return { volMult: 1.0, deload: false };
-    }
-    function baselineWeeklyTargets() {
-        const lm = LANDMARKS[experience] || LANDMARKS.Intermediate;
-        // Hypertrophy-first defaults: emphasize back/quads/delts slightly.
-        const base = {};
-        MUSCLES.forEach(m => { base[m] = lm.MEV; });
-        base.back = lm.MEV + 2;
-        base.quads = lm.MEV + 2;
-        base.side_delts = lm.MEV + 1;
-        base.glutes = lm.MEV + 1;
-        // Arms often get lots of secondary volume; keep at MEV initially.
-        return { base, lm };
-    }
-    function applyRails(targets, lm) {
-        const out = { ...targets };
-        Object.keys(out).forEach(m => {
-            const mr = (m === 'hamstrings') ? (lm.MRV - 2) : lm.MRV;
-            out[m] = Math.max(0, Math.min(mr, out[m]));
-        });
-        return out;
-    }
-    // -------------------- Quota allocation --------------------
-    function initQuotaMap() {
-        const q = {};
-        MUSCLES.forEach(m => q[m] = 0);
-        return q;
-    }
-    function addQuota(q, muscle, val) {
-        if (!muscle)
-            return;
-        if (q[muscle] == null)
-            q[muscle] = 0;
-        q[muscle] += val;
-    }
-    function creditExercise(q, ex, sets) {
-        // Primary credit
-        addQuota(q, ex.primary, -sets * 1.0);
-        // Secondary credit (0.5 each)
-        (ex.secondary || []).forEach(s => addQuota(q, s, -sets * 0.5));
-    }
-    function estimateExerciseTimeSeconds(ex, sets, reps, restStr) {
-        var _a, _b, _c;
-        // Very rough but consistent model.
-        // Set time: ~30–45s depending on reps (scale modestly).
-        const avgReps = (reps[0] + reps[1]) / 2;
-        const setTime = 25 + (avgReps * 2.0); // seconds
-        // Rest
-        const rest = String(restStr || '').includes('min') ? restStr : restStr;
-        const parseRest = (s) => {
-            const m = String(s).match(/(\d+(?:\.\d+)?)\s*\-\s*(\d+(?:\.\d+)?)\s*min/i);
-            if (m)
-                return ((parseFloat(m[1]) + parseFloat(m[2])) / 2) * 60;
-            const m2 = String(s).match(/(\d+)\s*\-\s*(\d+)\s*s/i);
-            if (m2)
-                return (parseFloat(m2[1]) + parseFloat(m2[2])) / 2;
-            const m3 = String(s).match(/(\d+)\s*\-\s*(\d+)\s*min/i);
-            if (m3)
-                return ((parseFloat(m3[1]) + parseFloat(m3[2])) / 2) * 60;
-            return 90;
-        };
-        const restSec = parseRest(rest);
-        // Setup cost
-        const setupNum = (_c = (_a = ex === null || ex === void 0 ? void 0 : ex.setupNum) !== null && _a !== void 0 ? _a : (_b = ex === null || ex === void 0 ? void 0 : ex.tags) === null || _b === void 0 ? void 0 : _b.setup) !== null && _c !== void 0 ? _c : 2;
-        const setup = setupNum === 3 ? 120 : setupNum === 2 ? 75 : 45;
-        // Warm-up sets (if provided)
-        const warmups = Array.isArray(ex === null || ex === void 0 ? void 0 : ex.warmups) ? ex.warmups : [];
-        const warmSetTime = (ws) => {
-            var _a;
-            const r = (_a = ws === null || ws === void 0 ? void 0 : ws.reps) !== null && _a !== void 0 ? _a : Math.round(avgReps * 0.6);
-            return 18 + (r * 1.6);
-        };
-        const warmRest = 45; // seconds between warm-ups
-        const warmTotal = warmups.reduce((sum, ws) => sum + warmSetTime(ws), 0) + Math.max(0, warmups.length - 1) * warmRest + (warmups.length ? 60 : 0); // ~60s to transition to work sets
-        // Total: setup once + sets*(setTime + rest except last rest)
-        return setup + warmTotal + Math.max(0, sets) * setTime + Math.max(0, sets - 1) * restSec;
-    }
-    // -------------------- Exercise selection (solver) --------------------
-    function chooseExercise(slot, remainingTargets, dayFatigue, usedIds, weekUsedIds, wantLengthened, profileObj, ctx = {}) {
-        var _a;
-        // ctx supports hard constraints:
-        // - axialUsedCount / maxAxialMonstersPerDay
-        // - allowHeavyBarbellHinge (Powerbuilding survival rule)
-        // - dayIntent (strength vs hypertrophy)
-        const w = (profileObj === null || profileObj === void 0 ? void 0 : profileObj.scoring) || scoreW;
-        const pool = getCandidates(slot.pool).filter(ex => ex.type === slot.type).filter(ex => !usedIds.has(ex.id));
-        // ---- Hard constraint helpers ----
-        const isBarbell = (ex) => String(ex.equipment || '').toLowerCase().includes('barbell');
-        const isLegPool = (ex) => String(ex.poolKey || '').includes('legs_squat') || String(ex.poolKey || '').includes('legs_hinge');
-        const isAxialMonster = (ex) => (ex.type === 'compound' &&
-            isLegPool(ex) &&
-            isBarbell(ex) &&
-            (ex.fatigueNum >= 3) // high/very_high
-        );
-        const isBarbellHinge = (ex) => String(ex.poolKey || '').includes('legs_hinge') && isBarbell(ex);
-        const isHeavyBarbellHinge = (ex) => isBarbellHinge(ex) && (ex.fatigueNum >= 4 || String(ex.name || '').toLowerCase().includes('deadlift'));
-        // Filter by constraints (exclude rather than just penalize — prevents "looks fine in scoring" failures)
-        let candidates = pool.filter(ex => {
-            if (ctx.maxAxialMonstersPerDay != null && ctx.axialUsedCount >= ctx.maxAxialMonstersPerDay && isAxialMonster(ex))
-                return false;
-            if (ctx.allowHeavyBarbellHinge === false && isHeavyBarbellHinge(ex))
-                return false;
-            if (ctx.allowBarbellHinge === false && isBarbellHinge(ex))
-                return false;
-            return true;
-        });
-        // Fallback to any in pool if constraints leave none
-        if (!candidates.length)
-            candidates = pool;
-        // Prefer lengthened if requested and available
-        if (wantLengthened) {
-            const len = candidates.filter(ex => ex.romBias === 'lengthened');
-            if (len.length)
-                candidates = len;
-        }
-        // Avoid repeating same substitution group (within the week) for better intent separation (UpperA vs UpperB, etc.)
-        if (weekUsedIds && weekUsedIds.size) {
-            // Soft penalty applied in scoring below
-        }
-        const scored = candidates
-            .map(ex => {
-            var _a, _b;
-            const primary = ex.primary;
-            const remaining = (_a = remainingTargets[primary]) !== null && _a !== void 0 ? _a : 0;
-            const needFit = clamp01(remaining / 10); // normalize against typical 10-set band
-            // Stimulus approximations: compounds and lengthened bias are nudged up for hypertrophy-intent days
-            const stimBase = (ex.type === 'compound') ? 0.85 : 0.70;
-            const romBonus = (ex.romBias === 'lengthened') ? (w.romW || 0) : (ex.romBias === 'mid' ? (w.romW || 0) * 0.5 : 0);
-            const fatiguePenalty = (ex.fatigueNum / 4) * w.fatigueW;
-            const setupPenalty = (ex.setupNum / 3) * w.setupW;
-            const skillPenalty = (ex.skillNum / 4) * w.skillW;
-            let mainLiftBonus = 0;
-            if (ex.isMainLift && (slot.role === 'main' || slot.role === 'secondary')) {
-                mainLiftBonus += w.mainLiftBonus;
-            }
-            else if (ex.isMainLift && slot.role === 'accessory') {
-                mainLiftBonus += w.mainLiftBonus * 0.5;
-            }
-            let equipNudge = 0;
-            if (ex.isMachine)
-                equipNudge += w.preferMachine;
-            if (String(ex.equipment || '').toLowerCase().includes('barbell'))
-                equipNudge += w.preferFreeWeight;
-            const sfBonus = ((_b = ex.stimulusToFatigue) !== null && _b !== void 0 ? _b : 0.5) * w.stimulusToFatigueW;
-            // Soft penalty for reusing the exact same movement family in the same week
-            let varietyPenalty = 0;
-            if (weekUsedIds && weekUsedIds.has(ex.id))
-                varietyPenalty += 0.35;
-            // Powerbuilding: enforce day intent separation
-            let intentBonus = 0;
-            const intent = ctx.dayIntent || 'mixed';
-            if (programType === 'Powerbuilding') {
-                if (intent === 'hypertrophy') {
-                    // Prefer machine/cable for accessories and reduce fatigue
-                    if (slot.role === 'accessory' && ex.isMachine)
-                        intentBonus += 0.10;
-                    if (ex.fatigueNum >= 3 && slot.role !== 'main')
-                        varietyPenalty += 0.10;
-                }
-                else if (intent === 'strength') {
-                    // Prefer free weights for main lifts; avoid junk accessories
-                    if ((slot.role === 'main' || slot.role === 'secondary') && String(ex.equipment || '').toLowerCase().includes('barbell'))
-                        intentBonus += 0.08;
-                }
-            }
-            // Optional-slot suppression: if primary muscle already filled, score collapses
-            const optionalSuppression = (slot.optional && remaining <= 0) ? 0.35 : 0;
-            const score = (needFit * w.needW) + (stimBase * w.stimW) + romBonus + mainLiftBonus + equipNudge + sfBonus + intentBonus
-                - fatiguePenalty - setupPenalty - skillPenalty - varietyPenalty - optionalSuppression;
-            return { ex, score };
-        })
-            .sort((a, b) => {
-            if (b.score !== a.score)
-                return b.score - a.score;
-            if (a.ex.fatigueNum !== b.ex.fatigueNum)
-                return a.ex.fatigueNum - b.ex.fatigueNum;
-            if (a.ex.setupNum !== b.ex.setupNum)
-                return a.ex.setupNum - b.ex.setupNum;
-            return a.ex.id.localeCompare(b.ex.id);
-        });
-        return ((_a = scored[0]) === null || _a === void 0 ? void 0 : _a.ex) || null;
-    }
-    function defaultSetsForRole(exRole, exType, wRamp, dayIntent = null) {
-        var _a, _b;
-        
-        // ========================================
-        // FIX #8: GVT 10×10 PROTOCOL
-        // ========================================
-        if (programType === 'German Volume Training (GVT)') {
-            if (exRole === 'main' && exType === 'compound') {
-                return 10; // ALWAYS 10 sets for main compounds
-            }
-            if (exRole === 'accessory') return 2;
-            return 3;
-        }
-        
-        // Baseline sets by experience and role.
-        const base = {
-            Beginner: { compound: 3, isolation: 2 },
-            Intermediate: { compound: 4, isolation: 3 },
-            Advanced: { compound: 5, isolation: 3 }
-        };
-        let sets = (_b = (_a = base[experience]) === null || _a === void 0 ? void 0 : _a[exType]) !== null && _b !== void 0 ? _b : 3;
-        // Program baselines
-        if (programType === 'Strength')
-            sets = Math.max(2, Math.round(sets * 0.75));
-        if (programType === 'Powerbuilding')
-            sets = Math.max(2, Math.round(sets * 0.90));
-        if (programType === 'Minimalist')
-            sets = Math.max(2, Math.round(sets * 0.65));
-        // Day intent suppression (prevents "filling space" on strength days)
-        const intent = dayIntent || 'mixed';
-        if (intent === 'strength' && exRole === 'accessory') {
-            sets = Math.max(1, Math.round(sets * 0.6));
-        }
-        if (intent === 'strength' && exRole === 'secondary' && exType === 'isolation') {
-            sets = Math.max(1, Math.round(sets * 0.7));
-        }
-        // Role: main lifts get stable volume; accessories carry most ramp.
-        if (exRole === 'main' && exType === 'compound') {
-            sets = Math.max(2, Math.round(sets * (wRamp.deload ? 0.6 : (wRamp.volMult >= 1.2 ? 1.05 : 1.0))));
-        }
-        else {
-            sets = Math.max(1, Math.round(sets * wRamp.volMult));
-        }
-        // Deload: use floor for conservative volume
-        if (wRamp.deload) {
-            sets = Math.max(1, Math.floor(sets * 0.7)); // FIX: Floor instead of round for consistent deloads
-        }
-        return sets;
-    }
-    function buildDayExerciseList(dayType, weekTargets, wRamp, timeCapMin, phaseName = 'Base', weekUsedIds = new Set()) {
-        var _a, _b, _c;
-        const slots = (((_a = profile.daySlots) === null || _a === void 0 ? void 0 : _a[dayType]) || ((_b = PROGRAM_PROFILES.Hypertrophy.daySlots) === null || _b === void 0 ? void 0 : _b[dayType]) || ((_c = PROGRAM_PROFILES.Hypertrophy.daySlots) === null || _c === void 0 ? void 0 : _c['Full']) || []);
-        const used = new Set();
-        // Copy remaining targets for within-day accounting
-        const remaining = { ...weekTargets };
-        // Day intent (used to separate strength vs hypertrophy behavior)
-        const getDayIntent = () => {
-            if (programType === 'Powerbuilding') {
-                if (String(dayType).includes('A'))
-                    return 'strength';
-                if (String(dayType).includes('B'))
-                    return 'hypertrophy';
-            }
-            if (programType === 'Strength')
-                return 'strength';
-            if (programType === 'Hypertrophy')
-                return 'hypertrophy';
-            if (programType === 'Minimalist')
-                return 'minimal';
-            return 'mixed';
-        };
-        const dayIntent = getDayIntent();
-        // Hard survival constraints
-        const ctx = {
-            dayIntent,
-            axialUsedCount: 0,
-            maxAxialMonstersPerDay: 1,
-            // Powerbuilding advanced hinge governor:
-            // - allow heavy barbell hinge only on LowerA (strength lower)
-            allowHeavyBarbellHinge: !(programType === 'Powerbuilding' && experience === 'Advanced' && String(dayType) !== 'LowerA'),
-            // - allow any barbell hinge at all on hypertrophy lower? usually no (prefer DB/machine)
-            allowBarbellHinge: !(programType === 'Powerbuilding' && experience === 'Advanced' && String(dayType) === 'LowerB')
-        };
-        const dayFatigue = { highCount: 0 };
-        const lengthenedUsedByMuscle = {};
-        const chosen = [];
-        const estimateTotalSec = () => chosen.reduce((sum, ex) => sum + estimateExerciseTimeSeconds(ex, ex.sets, ex.reps, ex.rest), 0);
-        const capSec = timeCapMin ? (Math.max(10, parseInt(timeCapMin)) * 60) : null;
-        const shouldFillOptional = (slot) => {
-            var _a, _b, _c;
-            if (!slot.optional)
-                return true;
-            // Optional slots are only filled if:
-            // 1) we still "need" the preferred muscle (or the slot's pool primary),
-            // 2) time budget allows,
-            // 3) day intent permits (strength days are minimalist by design)
-            if (dayIntent === 'strength')
-                return false; // protect main lifts on strength days
-            const prefer = slot.prefer || null;
-            if (prefer && ((_a = remaining[prefer]) !== null && _a !== void 0 ? _a : 0) <= 0)
-                return false;
-            // If no explicit prefer, approximate by checking the pool's first candidate primary
-            if (!prefer) {
-                const c = (_b = getCandidates(slot.pool)) === null || _b === void 0 ? void 0 : _b[0];
-                const prim = c === null || c === void 0 ? void 0 : c.primary;
-                if (prim && ((_c = remaining[prim]) !== null && _c !== void 0 ? _c : 0) <= 0)
-                    return false;
-            }
-            if (capSec != null) {
-                // crude time forecast: if we're already near cap, skip optional
-                const usedSec = estimateTotalSec();
-                if (usedSec > capSec * 0.85)
-                    return false;
-            }
-            return true;
-        };
-        const isAxialMonsterTag = (exObj) => {
-            var _a, _b, _c, _d;
-            const pk = String(((_a = exObj === null || exObj === void 0 ? void 0 : exObj.tags) === null || _a === void 0 ? void 0 : _a.poolKey) || '');
-            const nm = String((exObj === null || exObj === void 0 ? void 0 : exObj.name) || '').toLowerCase();
-            const eq = String(((_b = exObj === null || exObj === void 0 ? void 0 : exObj.tags) === null || _b === void 0 ? void 0 : _b.equipment) || (exObj === null || exObj === void 0 ? void 0 : exObj.equipment) || '').toLowerCase();
-            const fat = (_d = (_c = exObj === null || exObj === void 0 ? void 0 : exObj.tags) === null || _c === void 0 ? void 0 : _c.fatigue) !== null && _d !== void 0 ? _d : 2;
-            const legPool = pk.includes('legs_squat') || pk.includes('legs_hinge');
-            const barbell = eq.includes('barbell');
-            return legPool && barbell && fat >= 3 && (nm.includes('squat') || nm.includes('deadlift') || pk.includes('legs_'));
-        };
-        for (const slot of slots) {
-            if (!shouldFillOptional(slot))
-                continue;
-            const preferMuscle = slot.prefer;
-            const wantLengthened = preferMuscle ? (!lengthenedUsedByMuscle[preferMuscle]) : false;
-            const ex = chooseExercise(slot, remaining, dayFatigue, used, weekUsedIds, wantLengthened, profile, ctx);
-            if (!ex)
-                continue;
-            used.add(ex.id);
-            if (weekUsedIds)
-                weekUsedIds.add(ex.id);
-            if (ex.fatigueNum >= 3)
-                dayFatigue.highCount += 1;
-            // Determine reps/sets/rir/rest
-            const exType = (ex.type === 'compound') ? 'compound' : 'isolation';
-            const reps = getRepRange(programType, exType, 0, slot.role, phaseName, dayIntent);
-            const sets = defaultSetsForRole(slot.role, exType, wRamp, dayIntent);
-            const rir = getRIR(experience, exType, 1, sets, programType, slot.role, phaseName, dayIntent);
-            const rest = getRest(reps[0], exType, programType);
-            if (preferMuscle && ex.romBias === 'lengthened')
-                lengthenedUsedByMuscle[preferMuscle] = true;
-            // Credit muscle quotas (fractional)
-            creditExercise(remaining, ex, sets);
-            const entry = {
-                id: ex.id,
-                name: ex.name,
-                primary: ex.primary,
-                type: (ex.type === 'compound') ? 'compound' : 'isolation',
-                role: slot.role,
-                sets,
-                reps,
-                rir,
-                rest,
-                weight: null,
-                tags: {
-                    poolKey: ex.poolKey,
-                    romBias: ex.romBias,
-                    fatigue: ex.fatigueNum,
-                    setup: ex.setupNum,
-                    equipment: ex.equipment,
-                    substitutionGroup: ex.substitutionGroup
-                }
-            };
-            chosen.push(entry);
-            // Update hard fatigue constraints
-            if (isAxialMonsterTag(entry))
-                ctx.axialUsedCount += 1;
-        }
-        // Top-off pass (hypertrophy intent days only): if key muscles are still meaningfully under target,
-        // add 1 targeted isolation if time allows and the day isn't already long.
-        if (dayIntent === 'hypertrophy' && capSec != null) {
-            const under = Object.entries(remaining)
-                .filter(([m, v]) => v >= 3) // meaningful deficit
-                .sort((a, b) => b[1] - a[1]);
-            const usedSec = estimateTotalSec();
-            if (under.length && usedSec < capSec * 0.9) {
-                const [muscle] = under[0];
-                const topOffPoolsByMuscle = {
-                    chest: 'chest_isolation',
-                    lats: 'back_vertical',
-                    back: 'back_horizontal',
-                    quads: 'legs_quad_isolation',
-                    hamstrings: 'legs_hamstring_isolation',
-                    glutes: 'legs_glutes',
-                    side_delts: 'shoulders_lateral',
-                    rear_delts: 'shoulders_rear',
-                    biceps: 'arms_biceps',
-                    triceps: 'arms_triceps',
-                    core: 'core_antiextension'
-                };
-                const pool = topOffPoolsByMuscle[muscle];
-                if (pool && SOURCE_DB[pool]) {
-                    const slot = { pool, fallback: pool, role: 'accessory', type: 'isolation', optional: true, prefer: muscle };
-                    const ex = chooseExercise(slot, remaining, dayFatigue, used, weekUsedIds, false, profile, ctx);
-                    if (ex) {
-                        const exType = (ex.type === 'compound') ? 'compound' : 'isolation';
-                        const reps = getRepRange(programType, exType, 0, 'accessory', phaseName, dayIntent);
-                        const sets = Math.max(2, Math.round(defaultSetsForRole('accessory', exType, wRamp, dayIntent) * 0.7));
-                        const rir = getRIR(experience, exType, 1, sets, programType, 'accessory', phaseName, dayIntent);
-                        const rest = getRest(reps[0], exType, programType);
-                        creditExercise(remaining, ex, sets);
-                        chosen.push({
-                            id: ex.id,
-                            name: ex.name,
-                            primary: ex.primary,
-                            type: (ex.type === 'compound') ? 'compound' : 'isolation',
-                            role: 'accessory',
-                            sets,
-                            reps,
-                            rir,
-                            rest,
-                            weight: null,
-                            tags: { poolKey: ex.poolKey, romBias: ex.romBias, fatigue: ex.fatigueNum, setup: ex.setupNum, equipment: ex.equipment, substitutionGroup: ex.substitutionGroup }
-                        });
-                    }
-                }
-            }
-        }
-        // Time cap trimming: cut lowest-priority exercises first (never cut main lifts).
-        if (capSec && chosen.length) {
-            const duration = () => chosen.reduce((sum, ex) => sum + estimateExerciseTimeSeconds(ex, ex.sets, ex.reps, ex.rest), 0);
-            let t = duration();
-            if (t > capSec) {
-                const removalOrder = [...chosen]
-                    .map((ex, idx) => ({ ex, idx }))
-                    .sort((a, b) => {
-                    var _a, _b, _c, _d, _e, _f, _g, _h;
-                    const prio = (e) => (e.role === 'main' ? 0 : e.role === 'secondary' ? 1 : 2);
-                    const ta = prio(a.ex), tb = prio(b.ex);
-                    if (tb !== ta)
-                        return tb - ta;
-                    const fa = (_b = (_a = a.ex.tags) === null || _a === void 0 ? void 0 : _a.fatigue) !== null && _b !== void 0 ? _b : 2, fb = (_d = (_c = b.ex.tags) === null || _c === void 0 ? void 0 : _c.fatigue) !== null && _d !== void 0 ? _d : 2;
-                    if (fb !== fa)
-                        return fb - fa;
-                    const sa = (_f = (_e = a.ex.tags) === null || _e === void 0 ? void 0 : _e.setup) !== null && _f !== void 0 ? _f : 2, sb = (_h = (_g = b.ex.tags) === null || _g === void 0 ? void 0 : _g.setup) !== null && _h !== void 0 ? _h : 2;
-                    if (sb !== sa)
-                        return sb - sa;
-                    return b.idx - a.idx;
-                });
-                // Remove from end to avoid index shift issues
-                for (const r of removalOrder) {
-                    if (t <= capSec)
-                        break;
-                    if (r.ex.role === 'main')
-                        continue;
-                    const idx = chosen.findIndex(x => x.id === r.ex.id && x.name === r.ex.name && x.role === r.ex.role);
-                    if (idx >= 0)
-                        chosen.splice(idx, 1);
-                    t = duration();
-                }
-            }
-        }
-        return chosen;
-    }
-    // -------------------- Weekly targets & block stability --------------------
-    const { base: baseTargets, lm } = baselineWeeklyTargets();
-    function targetsForWeek(week) {
-        const weekInBlock = ((week - 1) % 4) + 1;
-        const ramp = weekRampInBlock(weekInBlock);
-        // Start around MEV, drift toward MAV via multiplier.
-        // Accessories carry most of the ramp via sets; we also scale baseline targets modestly.
-        const t = {};
-        Object.keys(baseTargets).forEach(m => {
-            const target = baseTargets[m] * (ramp.deload ? 0.6 : (weekInBlock === 3 ? 1.20 : weekInBlock === 2 ? 1.10 : 1.0));
-            t[m] = Math.round(target);
-        });
-        return applyRails(t, lm);
-    }
-    // Pre-select exercises for each block (weeks 1–3 stable).
-    const blockPlans = {}; // blockIndex -> dayIndex -> exercise list (without per-week sets)
-    function getBlockIndex(week) { return Math.floor((week - 1) / 4); }
-    // -------------------- Build program --------------------
-    const weeks = [];
-    for (let w = 1; w <= 12; w++) {
-        const phase = getPhaseParams(w);
-        const blockIndex = getBlockIndex(w);
-        const weekInBlock = ((w - 1) % 4) + 1;
-        const ramp = weekRampInBlock(weekInBlock);
-        const weekTargets = targetsForWeek(w);
-        if (!blockPlans[blockIndex]) {
-            blockPlans[blockIndex] = {};
-            // Choose stable exercise menus for this block using Week 1 targets.
-            const wk1Targets = targetsForWeek(blockIndex * 4 + 1);
-            const timeCapMin = parseInt(config.time || '') || null;
-            // Keep a shared week-level used set while building the block menu.
-            // This prevents duplicated days (e.g., UpperA and UpperB) from becoming identical.
-            const weekUsedIds = new Set();
-            for (let d = 0; d < daysNum; d++) {
-                const dayType = split[d];
-                blockPlans[blockIndex][d] = buildDayExerciseList(dayType, wk1Targets, weekRampInBlock(1), timeCapMin, 'Base', weekUsedIds);
-            }
-        }
-        const workouts = [];
-        for (let d = 0; d < daysNum; d++) {
-            const dayType = split[d];
-            const dayIntent = (programType === 'Powerbuilding') ? (String(dayType).includes('A') ? 'strength' : (String(dayType).includes('B') ? 'hypertrophy' : 'mixed'))
-                : (programType === 'Strength' ? 'strength' : (programType === 'Hypertrophy' ? 'hypertrophy' : (programType === 'Minimalist' ? 'minimal' : 'mixed')));
-            // Copy block menu and re-apply week ramp to set counts
-            const baseList = blockPlans[blockIndex][d] || [];
-            const exercises = baseList.map((ex, idx) => {
-                const exType = ex.type;
-                const role = ex.role;
-                const reps = getRepRange(programType, exType, idx === 0 ? 0 : 1, role, phase.phase, dayIntent);
-                const sets = defaultSetsForRole(role, exType, ramp, dayIntent);
-                const rir = getRIR(experience, exType, 1, sets, programType, role, phase.phase, dayIntent);
-                const rest = getRest(reps[0], exType, programType);
-                return {
-                    ...ex,
-                    reps,
-                    sets,
-                    rir,
-                    rest,
-                    weight: null,
-                    _warmupContext: { programType, phaseName: phase.phase, dayIntent, experience }
-                };
-            });
-            // Apply supersets if enabled (only non-main lifts)
-            let finalExercises = config.supersets ? applySupersets(exercises, programType) : exercises;
-            // Apply advanced techniques if enabled (safe accessory work only)
-            finalExercises = applyAdvancedTechniques(finalExercises, config, phase.phase, dayIntent);
-            // Suggest loads for main/secondary compound lifts with 1RM if provided
-            finalExercises.forEach((ex) => {
-                if (!ex)
-                    return;
-                const oneRM = getOneRMForExercise(ex, oneRMs);
-                const isMainish = (ex.role === 'main' || ex.role === 'secondary');
-                const isCompound = ex.type === 'compound';
-                if (oneRM && isMainish && isCompound) {
-                    ex.weight = calcMainLiftWeight(parseFloat(oneRM), ex.reps, ex.rir, experience, programType, ex.role, phase);
-                }
-            });
-            // Build warm-up sets for each exercise (display + time estimation)
-            finalExercises.forEach((ex) => {
-                if (!ex)
-                    return;
-                ex.warmups = buildWarmupSets(ex, programType, phase.phase, dayIntent, experience, config.warmups);
-            });
-            workouts.push({ dayNumber: d + 1, dayType, exercises: finalExercises });
-        }
-        weeks.push({
-            number: w,
-            phase: phase.phase,
-            deload: ramp.deload || phase.isDeload,
-            workouts
-        });
-    }
-    return { weeks, config, createdAt: new Date().toISOString(), generator: 'bulletproof_v3' };
+  }
 }
-// ==================== PROFILE-LINK (MULTI-USER) STORAGE ====================
-// 100% client-side, 100% free: we namespace localStorage by a profileId in the URL hash.
-// Link format:  #/u/<profileId>  (users can share/bookmark this to keep a distinct profile)
-const PROFILE_HASH_RE = /#\/u\/([^/]+)/;
-function getProfileIdFromHash() {
-    const hash = window.location.hash || "";
-    const m = hash.match(PROFILE_HASH_RE);
-    return m && m[1] ? decodeURIComponent(m[1]) : "";
-}
-function setHashToProfile(profileId) {
-    // Preserve any existing trailing path after the profile segment if present.
-    // Even though this app doesn't route by hash, this keeps links future-proof.
-    const hash = window.location.hash || "";
-    const rest = hash.replace(PROFILE_HASH_RE, "").replace(/^#/, "");
-    const suffix = rest && rest.startsWith("/") ? rest : (rest ? "/" + rest : "");
-    window.location.hash = `#/u/${encodeURIComponent(profileId)}${suffix}`;
-}
-function ensureProfileId() {
-    let pid = getProfileIdFromHash();
-    if (!pid) {
-        pid = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random().toString(16).slice(2);
-        setHashToProfile(pid);
+
+// v7.33: Per-workout readiness system
+window.openWorkoutReadinessModal = function openWorkoutReadinessModal(weekIndex, dayIndex, day) {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px';
+  
+  const workoutKey = `${weekIndex}_${dayIndex}`;
+  const currentReadiness = (state.workoutReadiness && state.workoutReadiness[workoutKey]) || 3;
+  
+  modal.innerHTML = `
+    <div style="background:#1f2937;border-radius:16px;max-width:400px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+      <div style="font-size:20px;font-weight:700;margin-bottom:8px;color:#fff">How are you feeling?</div>
+      <div style="font-size:14px;color:#9ca3af;margin-bottom:24px">${day.title} • Week ${weekIndex + 1}</div>
+      
+      <div style="display:flex;gap:8px;margin-bottom:24px;justify-content:space-between">
+        <button class="readiness-option" data-value="1" style="flex:1;padding:16px 8px;border:2px solid #374151;border-radius:12px;background:#111827;color:#fff;cursor:pointer;transition:all 0.2s;text-align:center">
+          <div style="font-size:24px;margin-bottom:4px">😴</div>
+          <div style="font-size:11px;font-weight:600">Exhausted</div>
+        </button>
+        <button class="readiness-option" data-value="2" style="flex:1;padding:16px 8px;border:2px solid #374151;border-radius:12px;background:#111827;color:#fff;cursor:pointer;transition:all 0.2s;text-align:center">
+          <div style="font-size:24px;margin-bottom:4px">😫</div>
+          <div style="font-size:11px;font-weight:600">Tired</div>
+        </button>
+        <button class="readiness-option" data-value="3" style="flex:1;padding:16px 8px;border:2px solid #10b981;border-radius:12px;background:#111827;color:#fff;cursor:pointer;transition:all 0.2s;text-align:center">
+          <div style="font-size:24px;margin-bottom:4px">😐</div>
+          <div style="font-size:11px;font-weight:600">Normal</div>
+        </button>
+        <button class="readiness-option" data-value="4" style="flex:1;padding:16px 8px;border:2px solid #374151;border-radius:12px;background:#111827;color:#fff;cursor:pointer;transition:all 0.2s;text-align:center">
+          <div style="font-size:24px;margin-bottom:4px">😊</div>
+          <div style="font-size:11px;font-weight:600">Good</div>
+        </button>
+        <button class="readiness-option" data-value="5" style="flex:1;padding:16px 8px;border:2px solid #374151;border-radius:12px;background:#111827;color:#fff;cursor:pointer;transition:all 0.2s;text-align:center">
+          <div style="font-size:24px;margin-bottom:4px">💪</div>
+          <div style="font-size:11px;font-weight:600">Excellent</div>
+        </button>
+      </div>
+      
+      <div id="readinessEffect" style="font-size:13px;color:#9ca3af;margin-bottom:20px;text-align:center;min-height:40px;line-height:1.4"></div>
+      
+      <div style="display:flex;gap:12px">
+        <button id="readinessCancel" style="flex:1;padding:12px;border:none;border-radius:8px;background:#374151;color:#fff;font-weight:600;cursor:pointer">Cancel</button>
+        <button id="readinessConfirm" style="flex:1;padding:12px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-weight:600;cursor:pointer">Apply</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  let selectedReadiness = currentReadiness;
+  
+  // Update effect text
+  const updateEffect = (value) => {
+    const effectEl = modal.querySelector('#readinessEffect');
+    if (value <= 2) {
+      effectEl.innerHTML = `<span style="color:#ef4444">⚠️ Volume -20%, Intensity -5%</span><br><span style="font-size:12px">Workout adjusted for recovery</span>`;
+    } else if (value >= 4) {
+      effectEl.innerHTML = `<span style="color:#10b981">✅ Volume +10%, Intensity +3%</span><br><span style="font-size:12px">Workout optimized for performance</span>`;
+    } else {
+      effectEl.innerHTML = `<span style="color:#10b981">✅ No adjustment</span><br><span style="font-size:12px">Workout as programmed</span>`;
     }
-    return pid;
-}
-function storageKey(k) {
-    const pid = ensureProfileId();
-    return `trainiq:${pid}:${k}`;
-}
-const storage = {
-    get(k, fallback) {
-        try {
-            const raw = localStorage.getItem(storageKey(k));
-            if (!raw)
-                return fallback;
-            return JSON.parse(raw);
-        }
-        catch (e) {
-            return fallback;
-        }
-    },
-    set(k, value) {
-        try {
-            localStorage.setItem(storageKey(k), JSON.stringify(value));
-        }
-        catch (e) { }
-    },
-    remove(k) {
-        try {
-            localStorage.removeItem(storageKey(k));
-        }
-        catch (e) { }
-    },
-    clearProfile() {
-        const pid = ensureProfileId();
-        const prefix = `trainiq:${pid}:`;
-        const toRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith(prefix))
-                toRemove.push(key);
-        }
-        toRemove.forEach(k => localStorage.removeItem(k));
+  };
+  
+  // Option button handlers
+  modal.querySelectorAll('.readiness-option').forEach(btn => {
+    if (parseInt(btn.dataset.value) === currentReadiness) {
+      btn.style.borderColor = 'var(--primary)';
+      btn.style.background = 'rgba(16, 185, 129, 0.1)';
     }
+    
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('.readiness-option').forEach(b => {
+        b.style.borderColor = '#374151';
+        b.style.background = '#111827';
+      });
+      btn.style.borderColor = 'var(--primary)';
+      btn.style.background = 'rgba(16, 185, 129, 0.1)';
+      selectedReadiness = parseInt(btn.dataset.value);
+      updateEffect(selectedReadiness);
+    });
+  });
+  
+  updateEffect(selectedReadiness);
+  
+  // Cancel handler
+  modal.querySelector('#readinessCancel').addEventListener('click', () => {
+    document.body.removeChild(modal);
+  });
+  
+  // Confirm handler
+  modal.querySelector('#readinessConfirm').addEventListener('click', () => {
+    // Save readiness for this specific workout
+    if (!state.workoutReadiness) state.workoutReadiness = {};
+    state.workoutReadiness[workoutKey] = selectedReadiness;
+    
+    // Apply adjustment to the workout
+    applyReadinessAdjustment(weekIndex, dayIndex, selectedReadiness);
+    
+    saveState();
+    renderWorkout();
+    document.body.removeChild(modal);
+    
+    notify(`Readiness set: ${selectedReadiness === 1 ? 'Exhausted' : selectedReadiness === 2 ? 'Tired' : selectedReadiness === 3 ? 'Normal' : selectedReadiness === 4 ? 'Good' : 'Excellent'}`);
+  });
+  
+  // Close on backdrop click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      document.body.removeChild(modal);
+    }
+  });
 };
-// One-time migration: if a user has legacy single-profile data, move it into the current profile.
-(function migrateLegacyStorage() {
-    const legacyKey = "trainiq-pro";
-    const newKey = storageKey("state");
+
+// v7.33: Apply readiness adjustment to workout
+function applyReadinessAdjustment(weekIndex, dayIndex, readinessScore) {
+  const block = state.currentBlock;
+  if (!block || !block.weeks[weekIndex] || !block.weeks[weekIndex].days[dayIndex]) return;
+  
+  const day = block.weeks[weekIndex].days[dayIndex];
+  
+  // Store original values if not already stored
+  if (!day.originalWork) {
+    day.originalWork = JSON.parse(JSON.stringify(day.work));
+  }
+  
+  // Reset to original first
+  day.work = JSON.parse(JSON.stringify(day.originalWork));
+  
+  // Apply adjustments based on readiness
+  if (readinessScore < 2.5) {
+    // Low readiness: -20% volume, -5% intensity
+    day.work.forEach(ex => {
+      ex.sets = Math.max(1, Math.floor(ex.sets * 0.8));
+      if (ex.pct > 0) {
+        ex.pct = Math.max(0.5, ex.pct - 0.05);
+      }
+    });
+  } else if (readinessScore > 3.5) {
+    // High readiness: +10% volume, +3% intensity
+    day.work.forEach(ex => {
+      ex.sets = Math.ceil(ex.sets * 1.1);
+      if (ex.pct > 0) {
+        ex.pct = Math.min(0.98, ex.pct + 0.03);
+      }
+    });
+  }
+  // Moderate (3) = no change
+}
+
+function renderHistory() {
+  const list = $('historyList');
+  if (!list) return;
+  
+  const blocks = (state.blockHistory || []).slice();
+  if (!blocks.length) {
+    list.innerHTML = `<div class="card" style="background:rgba(17,24,39,.5)"><div class="card-title">No history yet</div><div class="card-subtitle">Generate a training block to see it here.</div></div>`;
+    return;
+  }
+  
+  list.innerHTML = '';
+  
+  blocks.forEach((block) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.cursor = 'pointer';
+    
+    const completedDays = block.weeks.reduce((sum, week) => 
+      sum + week.days.filter(d => d.completed).length, 0);
+    const totalDays = block.weeks.reduce((sum, week) => sum + week.days.length, 0);
+    const progressPct = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
+    
+    card.innerHTML = `
+      <div class="card-title">${block.programType || 'General'} Block</div>
+      <div class="card-subtitle">${block.startDateISO} • ${block.blockLength} weeks • ${completedDays}/${totalDays} sessions completed (${progressPct}%)</div>
+      <div style="margin-top:8px;background:rgba(255,255,255,0.1);border-radius:8px;height:6px;overflow:hidden">
+        <div style="width:${progressPct}%;height:100%;background:var(--primary);transition:width 0.3s"></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-mini success" data-action="load" style="flex:1;min-width:80px">📋 Load</button>
+        <button class="btn-mini primary" data-action="redo" style="flex:1;min-width:80px">🔄 Redo</button>
+        <button class="btn-mini secondary" data-action="view" style="flex:1;min-width:80px">👁 View</button>
+        <button class="btn-mini secondary" data-action="export" style="flex:1;min-width:80px">📤 Export</button>
+        <button class="btn-mini danger" data-action="delete" style="flex:0 0 auto">✕</button>
+      </div>
+    `;
+    
+    // Load block as current
+    card.querySelector('[data-action="load"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      console.log('📋 Load Block: Button clicked, block ID:', block.id);
+      
+      if (confirm(`Load this block as your current training block?\n\nThis will replace your current block.`)) {
+        console.log('📋 Load Block: User confirmed, transforming structure...');
+        
+        // v7.38 CRITICAL FIX: Transform history structure to current block structure
+        // blockHistory stores 'day.exercises' but currentBlock needs 'day.work'
+        // Same transformation as Redo button, but preserves completion status
+        const loadedBlock = {
+          seed: block.blockSeed || Date.now(),
+          profileName: block.profileName,
+          startDateISO: block.startDateISO || todayISO(),
+          programType: block.programType,
+          blockLength: block.blockLength,
+          weeks: block.weeks.map(week => ({
+            weekIndex: week.weekIndex,
+            phase: week.phase,
+            intensity: week.intensity || 0.75,
+            volFactor: week.volFactor || 0.8,
+            days: week.days.map(day => ({
+              title: day.title,
+              dow: day.dow,
+              kind: day.kind || (day.title.includes('Accessory') || day.title.includes('Hypertrophy') ? 'accessory' : 'snatch'),
+              liftKey: day.liftKey || '',
+              completed: day.completed || false,
+              completedDate: day.completedDate || null,
+              work: (day.exercises || day.work || []).map(ex => ({
+                name: ex.name,
+                sets: ex.sets,
+                reps: ex.reps,
+                pct: ex.prescribedPct ? ex.prescribedPct / 100 : (ex.pct || 0),
+                liftKey: ex.liftKey || '',
+                tag: ex.tag || 'work',
+                targetRIR: ex.targetRIR || null,
+                recommendedPct: ex.recommendedPct || 0,
+                description: ex.description || ''
+              }))
+            }))
+          }))
+        };
+        
+        console.log('📋 Load Block: Transformed block:', loadedBlock);
+        console.log('📋 Load Block: Weeks:', loadedBlock.weeks.length);
+        console.log('📋 Load Block: First week days:', loadedBlock.weeks[0]?.days.length);
+        console.log('📋 Load Block: First day work:', loadedBlock.weeks[0]?.days[0]?.work.length);
+        console.log('📋 Load Block: Program Type:', loadedBlock.programType);
+        
+        // v7.40 FIX: Set state FIRST, then save, then render
+        state.currentBlock = loadedBlock;
+        ui.weekIndex = block.currentWeek || 0;
+        
+        console.log('📋 Load Block: State updated, currentBlock.programType:', state.currentBlock.programType);
+        
+        console.log('📋 Load Block: Saving state...');
+        saveState();
+        
+        console.log('📋 Load Block: Initial render...');
+        renderDashboard();
+        renderWorkout();
+        
+        notify('✅ Block loaded! Check Workout tab to continue.');
+        showPage('Workout');
+        
+        // v7.40 FIX: Force re-render after page switch to ensure fresh data
+        console.log('📋 Load Block: Forcing final re-render...');
+        setTimeout(() => {
+          renderWorkout();
+          console.log('📋 Load Block: Final render complete!');
+          console.log('📋 Load Block: Verify currentBlock.programType:', state.currentBlock?.programType);
+        }, 100);
+        
+        console.log('📋 Load Block: Complete!');
+      }
+    });
+    
+    // Redo block (reset all completion)
+    card.querySelector('[data-action="redo"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm(`Redo this entire ${block.blockLength}-week block from scratch?\n\nThis will reset all completed sessions and start fresh from Week 1, Day 1.`)) {
+        console.log('🔄 REDO CLICKED - Starting fresh block process');
+        
+        // CRITICAL FIX: Transform history block structure back to currentBlock format
+        // History blocks have: days.exercises (simplified)
+        // Current blocks need: days.work (full exercise objects with pct, liftKey, etc.)
+        
+        const freshBlock = {
+          seed: block.blockSeed || Date.now(),
+          profileName: block.profileName,
+          startDateISO: todayISO(),
+          programType: block.programType,
+          blockLength: block.blockLength,
+          weeks: block.weeks.map(week => ({
+            weekIndex: week.weekIndex,
+            phase: week.phase,
+            intensity: week.intensity || 0.75, // Reasonable default
+            volFactor: week.volFactor || 0.8,  // Reasonable default
+            days: week.days.map(day => ({
+              title: day.title,
+              dow: day.dow,
+              kind: day.kind || (day.title.includes('Accessory') || day.title.includes('Hypertrophy') ? 'accessory' : 'snatch'),
+              liftKey: day.liftKey || '',
+              completed: false, // Reset completion
+              completedDate: null,
+              work: day.exercises.map(ex => ({
+                name: ex.name,
+                sets: ex.sets,
+                reps: ex.reps,
+                pct: ex.prescribedPct ? ex.prescribedPct / 100 : 0,
+                liftKey: ex.liftKey || '',
+                tag: ex.tag || 'work',
+                targetRIR: ex.targetRIR || null,
+                recommendedPct: ex.recommendedPct || 0,
+                description: ex.description || ''
+              }))
+            }))
+          }))
+        };
+        
+        console.log('✅ Transformed block structure - weeks:', freshBlock.weeks.length);
+        console.log('✅ Week 1 days:', freshBlock.weeks[0]?.days.length);
+        console.log('✅ Day 1 work exercises:', freshBlock.weeks[0]?.days[0]?.work.length);
+        
+        // Set as current block
+        state.currentBlock = freshBlock;
+        state.setLogs = {};  // Clear all set logs
+        
+        // CRITICAL: Reset UI week index to 0
+        ui.weekIndex = 0;
+        
+        saveState();
+        renderDashboard();
+        renderWorkout();
+        
+        notify('✅ Block reset! Starting fresh from Week 1, Day 1.');
+        showPage('Workout');  // Show Workout tab with fresh block
+      }
+    });
+    
+    // View details
+    card.querySelector('[data-action="view"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showBlockDetails(block);
+    });
+    
+    // Export
+    card.querySelector('[data-action="export"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportBlock(block);
+    });
+    
+    // Delete
+    card.querySelector('[data-action="delete"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm(`Delete this ${block.blockLength}-week block?`)) {
+        state.blockHistory = state.blockHistory.filter(b => b.id !== block.id);
+        saveState();
+        renderHistory();
+        notify('Block deleted');
+      }
+    });
+    
+    list.appendChild(card);
+  });
+}
+
+function showBlockDetails(block) {
+  let html = `
+    <div style="max-height:70vh;overflow-y:auto;padding:20px">
+      <h3 style="margin-top:0">${block.programType || 'General'} Block</h3>
+      <p style="color:var(--text-dim);margin-bottom:20px">
+        Started: ${block.startDateISO}<br>
+        Duration: ${block.blockLength} weeks<br>
+        Units: ${block.units || 'kg'}
+      </p>
+  `;
+  
+  block.weeks.forEach((week, weekIdx) => {
+    html += `
+      <div style="margin-bottom:24px;padding:16px;background:rgba(255,255,255,0.05);border-radius:8px">
+        <h4 style="margin:0 0 12px 0;color:var(--primary)">Week ${weekIdx + 1} - ${week.phase}</h4>
+    `;
+    
+    week.days.forEach((day, dayIdx) => {
+      const statusColor = day.completed ? '#10b981' : '#6b7280';
+      const statusText = day.completed ? `✓ Completed ${day.completedDate}` : 'Not completed';
+      
+      html += `
+        <div style="margin-bottom:16px;padding:12px;background:rgba(0,0,0,0.3);border-radius:8px;border-left:3px solid ${statusColor}">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong>${day.title}</strong>
+            <span style="font-size:12px;color:${statusColor}">${statusText}</span>
+          </div>
+      `;
+      
+      day.exercises.forEach((ex, exIdx) => {
+        html += `<div style="margin:6px 0;font-size:13px;color:var(--text-dim)">
+          ${ex.name}: ${ex.sets}×${ex.reps}${ex.prescribedWeight ? ` @ ${ex.prescribedWeight} ${block.units} (${ex.prescribedPct}%)` : ''}
+        `;
+        
+        if (day.completed && ex.actualSets && ex.actualSets.length > 0) {
+          const workSets = ex.actualSets.filter(s => s.tag === 'work' && s.weight);
+          if (workSets.length > 0) {
+            const weights = workSets.map(s => s.weight).filter(w => w);
+            if (weights.length > 0) {
+              const avgWeight = Math.round(weights.reduce((a, b) => Number(a) + Number(b), 0) / weights.length);
+              html += `<br><span style="color:#10b981">→ Actual: ${avgWeight} ${block.units} avg</span>`;
+            }
+          }
+        }
+        
+        html += `</div>`;
+      });
+      
+      html += `</div>`;
+    });
+    
+    html += `</div>`;
+  });
+  
+  html += `</div>`;
+  
+  openModal('Block Details', '', html);
+}
+
+function exportBlock(block) {
+  // v7.40: Export block as CSV for backup/restore
+  // v7.40 FIX: Added validation and support for both 'work' and 'exercises' fields
+  
+  if (!block) {
+    alert('⚠️ No training block to export. Generate a block first.');
+    console.error('Export failed: block is null or undefined');
+    return;
+  }
+  
+  if (!block.weeks || block.weeks.length === 0) {
+    alert('⚠️ Training block has no weeks. Cannot export empty block.');
+    console.error('Export failed: block.weeks is empty', block);
+    return;
+  }
+  
+  console.log('📤 Export: Starting export for block with', block.weeks.length, 'weeks');
+  
+  let csv = 'Week,Day,Exercise,Sets,Reps,Percentage,Notes\n';
+  let rowCount = 0;
+  
+  block.weeks.forEach((week, weekIdx) => {
+    if (!week.days || week.days.length === 0) {
+      console.warn(`📤 Export: Week ${weekIdx + 1} has no days, skipping`);
+      return;
+    }
+    
+    week.days.forEach((day, dayIdx) => {
+      // v7.40 FIX: Handle BOTH 'work' and 'exercises' fields
+      // Different parts of the app use different field names
+      const exercises = day.work || day.exercises || [];
+      
+      if (exercises.length === 0) {
+        console.warn(`📤 Export: Week ${weekIdx + 1}, Day ${dayIdx + 1} (${day.title}) has no exercises`);
+      }
+      
+      exercises.forEach((ex) => {
+        // Handle both percentage formats
+        const pct = ex.pct ? Math.round(ex.pct * 100) : 
+                    ex.prescribedPct ? ex.prescribedPct : '';
+        const notes = `${week.phase || 'accumulation'}|${day.title || 'workout'}`;
+        csv += `${weekIdx + 1},"${day.title || 'workout'}","${ex.name}",${ex.sets},${ex.reps},${pct},"${notes}"\n`;
+        rowCount++;
+      });
+    });
+  });
+  
+  if (rowCount === 0) {
+    alert('⚠️ No exercises found in training block.\n\nThe block structure may be corrupted. Try regenerating your block.');
+    console.error('Export failed: No exercises found in block');
+    console.error('Block structure:', JSON.stringify(block, null, 2));
+    return;
+  }
+  
+  console.log(`📤 Export: Successfully exported ${rowCount} exercises from ${block.weeks.length} weeks`);
+  
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `LiftAI_Block_${block.programType || 'general'}_${block.startDateISO || 'backup'}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  notify('✅ Training block exported as CSV');
+}
+
+// v7.35: Import training block from CSV
+function importBlock(csvText) {
+  try {
+    console.log('🔍 importBlock: Starting parse...');
+    const lines = csvText.trim().split('\n').filter(l => l.trim());
+    console.log('🔍 importBlock: Found', lines.length, 'lines');
+    
+    if (lines.length < 2) {
+      return { success: false, error: 'CSV file is empty or has only a header row' };
+    }
+    
+    // Parse header
+    const header = lines[0].toLowerCase();
+    console.log('🔍 importBlock: Header:', header);
+    
+    if (!header.includes('week') || !header.includes('exercise')) {
+      return { 
+        success: false, 
+        error: 'Invalid CSV format. Must have "Week" and "Exercise" columns.\n\nExpected format:\nWeek,Day,Exercise,Sets,Reps,Percentage,Notes\n\nActual header:\n' + lines[0]
+      };
+    }
+    
+    // Parse data with more flexible regex
+    const weeks = {};
+    let parsedLines = 0;
+    let skippedLines = 0;
+    
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      // More flexible regex that handles quotes and missing fields
+      // Format: Week,"Day","Exercise",Sets,Reps,Percentage,"Notes"
+      const match = line.match(/^(\d+),?"?([^",]+)"?,?"?([^",]+)"?,?(\d+),?(\d+),?(\d*),?"?([^"]*)"?$/);
+      
+      if (!match) {
+        console.warn('🔍 importBlock: Skipped line', i, ':', line);
+        skippedLines++;
+        continue;
+      }
+      
+      const [, weekNum, dayTitle, exercise, sets, reps, pct, notes] = match;
+      const weekIdx = parseInt(weekNum) - 1;
+      
+      console.log('🔍 importBlock: Parsed - Week', weekNum, 'Day', dayTitle, 'Exercise', exercise);
+      
+      if (!weeks[weekIdx]) {
+        const noteParts = notes.split('|');
+        weeks[weekIdx] = {
+          weekIndex: weekIdx,
+          days: {},
+          phase: noteParts[0] || 'accumulation',
+          intensity: 0.75,
+          volFactor: 1.0
+        };
+      }
+      
+      if (!weeks[weekIdx].days[dayTitle]) {
+        // Determine kind based on day title
+        let kind = 'snatch';
+        const titleLower = dayTitle.toLowerCase();
+        if (titleLower.includes('clean') || titleLower.includes('jerk') || titleLower.includes('c&j')) {
+          kind = 'cj';
+        } else if (titleLower.includes('combined')) {
+          kind = 'combined';
+        } else if (titleLower.includes('strength')) {
+          kind = 'strength';
+        } else if (titleLower.includes('accessory') || titleLower.includes('hypertrophy')) {
+          kind = 'accessory';
+        }
+        
+        // Determine liftKey based on kind
+        let liftKey = '';
+        if (kind === 'snatch') liftKey = 'snatch';
+        else if (kind === 'cj') liftKey = 'cj';
+        else if (kind === 'combined') liftKey = 'snatch'; // Combined uses snatch as primary
+        
+        weeks[weekIdx].days[dayTitle] = {
+          dow: 0, // Will be assigned later
+          title: dayTitle,
+          kind,
+          liftKey,
+          completed: false,
+          completedDate: null,
+          work: []
+        };
+      }
+      
+      // Determine liftKey for this exercise
+      const exLower = exercise.toLowerCase();
+      let exLiftKey = '';
+      if (exLower.includes('snatch')) exLiftKey = 'snatch';
+      else if (exLower.includes('clean') || exLower.includes('jerk')) exLiftKey = 'cj';
+      else if (exLower.includes('front squat')) exLiftKey = 'fs';
+      else if (exLower.includes('back squat') || exLower.includes('squat')) exLiftKey = 'bs';
+      else if (exLower.includes('push press')) exLiftKey = 'pushPress';
+      else if (exLower.includes('press')) exLiftKey = 'strictPress';
+      
+      weeks[weekIdx].days[dayTitle].work.push({
+        name: exercise,
+        sets: parseInt(sets) || 0,
+        reps: parseInt(reps) || 0,
+        pct: pct ? parseFloat(pct) / 100 : 0,
+        liftKey: exLiftKey,
+        tag: 'work'
+      });
+      
+      parsedLines++;
+    }
+    
+    console.log('🔍 importBlock: Parsed', parsedLines, 'lines, skipped', skippedLines);
+    
+    if (parsedLines === 0) {
+      return { success: false, error: 'No valid exercises found in CSV. Check the format.' };
+    }
+    
+    // Convert to array format
+    const weeksArray = [];
+    const maxWeek = Math.max(...Object.keys(weeks).map(Number));
+    
+    for (let i = 0; i <= maxWeek; i++) {
+      if (weeks[i]) {
+        const daysArray = Object.values(weeks[i].days);
+        // Assign DOW based on order (Mon=1, Wed=3, Fri=5, etc.)
+        const daysPerWeek = daysArray.length;
+        daysArray.forEach((day, idx) => {
+          if (daysPerWeek === 3) {
+            day.dow = [1, 3, 5][idx] || idx; // Mon, Wed, Fri
+          } else if (daysPerWeek === 4) {
+            day.dow = [1, 2, 4, 5][idx] || idx; // Mon, Tue, Thu, Fri
+          } else if (daysPerWeek === 5) {
+            day.dow = [1, 2, 3, 4, 5][idx] || idx; // Mon-Fri
+          } else if (daysPerWeek === 6) {
+            day.dow = [1, 2, 3, 4, 5, 6][idx] || idx; // Mon-Sat
+          } else {
+            day.dow = idx + 1; // Fallback
+          }
+        });
+        
+        weeksArray.push({
+          ...weeks[i],
+          days: daysArray
+        });
+      }
+    }
+    
+    console.log('🔍 importBlock: Created', weeksArray.length, 'weeks');
+    
+    const block = {
+      id: 'imported_' + Date.now(),
+      programType: 'general',
+      blockLength: weeksArray.length,
+      startDateISO: new Date().toISOString().split('T')[0],
+      weeks: weeksArray,
+      currentWeek: 0
+    };
+    
+    console.log('🔍 importBlock: Success!', block);
+    return { success: true, block };
+    
+  } catch (err) {
+    console.error('🔍 importBlock: Exception:', err);
+    return { success: false, error: err.message + '\n\nStack: ' + err.stack };
+  }
+}
+
+function renderSessionSummary(session) {
+  if (!session || !Array.isArray(session.work)) return '—';
+  const lines = session.work.map(ex => `${ex.name}: ${ex.sets}×${ex.reps}${ex.weightText ? ' • ' + ex.weightText : ''}`);
+  return lines.slice(0, 6).join('<br>') + (lines.length > 6 ? '<br>…' : '');
+}
+
+function renderSettings() {
+  const sel = $('settingsProfileSelect');
+  if (sel) {
+    sel.innerHTML = '';
+    Object.keys(state.profiles).forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      if (name === state.activeProfile) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+  const p = getProfile();
+  const info = $('settingsInfo');
+  if (info) info.textContent = `Active: ${p.name} • ${p.programType || 'general'} • ${p.units || 'kg'}`;
+  if ($('settingsUnits')) $('settingsUnits').value = p.units || 'kg';
+  if ($('settingsIncludeBlocks')) $('settingsIncludeBlocks').checked = !!p.includeBlocks;
+  if ($('settingsVolumePref')) $('settingsVolumePref').value = p.volumePref || 'reduced';
+  if ($('settingsAutoCut')) $('settingsAutoCut').checked = p.autoCut !== false;
+  if ($('settingsAIEnabled')) $('settingsAIEnabled').checked = p.aiEnabled !== false;
+  if ($('settingsAIModel')) $('settingsAIModel').value = p.aiModel || '';
+  if ($('settingsSnatch')) $('settingsSnatch').value = p.maxes?.snatch ?? '';
+  if ($('settingsCJ')) $('settingsCJ').value = p.maxes?.cj ?? '';
+  if ($('settingsFS')) $('settingsFS').value = p.maxes?.fs ?? '';
+  if ($('settingsBS')) $('settingsBS').value = p.maxes?.bs ?? '';
+}
+
+function isDayCompleted(weekIndex, dayIndex) {
+  return (state.history || []).some(h => h.weekIndex === weekIndex && h.dayIndex === dayIndex && h.profileName === state.activeProfile);
+}
+
+function countCompletedForWeek(weekIndex) {
+  return (state.history || []).filter(h => h.weekIndex === weekIndex && h.profileName === state.activeProfile).length;
+}
+
+function completeDay(weekIndex, dayIndex, dayPlan) {
+  const p = getProfile();
+  const key = workoutKey(weekIndex, dayIndex);
+  const logs = ensureSetLogs();
+  const dayLog = logs[key] || {};
+  const session = {
+    title: dayPlan.title,
+    work: dayPlan.work.map((ex) => {
+      const liftKey = ex.liftKey || dayPlan.liftKey;
+      let weightText = '';
+      if (ex.pct && liftKey) {
+        const base = getBaseForExercise(ex.name, liftKey, p);
+        const wgt = roundTo(base * ex.pct, p.units === 'kg' ? 1 : 1);
+        weightText = `${wgt} ${p.units} (${Math.round(ex.pct * 100)}%)`;
+      }
+      return { ...ex, weightText };
+    })
+  };
+  if (!p.liftAdjustments) p.liftAdjustments = {};
+  const actionToAdj = (a) => {
+    switch ((a || '').toLowerCase()) {
+      case 'make': return 0.0025;
+      case 'belt': return 0.0010;
+      case 'heavy': return -0.0015;
+      case 'miss': return -0.0050;
+      default: return 0.0;
+    }
+  };
+  const deltas = {};
+  dayPlan.work.forEach((ex, exIndex) => {
+    const liftKey = ex.liftKey || dayPlan.liftKey;
+    if (!liftKey || !ex.pct) return;
+    const workSets = getWorkSetsOverride(dayLog, exIndex, ex.sets);
+    const exEff = { ...ex, sets: workSets };
+    const scheme = buildSetScheme(exEff, liftKey, p);
+    let lastWork = -1;
+    for (let i = scheme.length - 1; i >= 0; i--) {
+      if (scheme[i]?.tag === 'work') { lastWork = i; break; }
+    }
+    if (lastWork < 0) return;
+    const recKey = `${exIndex}:${lastWork}`;
+    const rec = dayLog[recKey] || {};
+    const act = rec.action || '';
+    const adj = computeCumulativeAdj(dayLog, exIndex, lastWork, scheme);
+    const prescribed = scheme[lastWork]?.targetWeight ? roundTo(scheme[lastWork].targetWeight * (1 + adj), p.units === 'kg' ? 1 : 1) : 0;
+    const performed = Number(rec.weight);
+    let d = actionToAdj(act);
+    if (Number.isFinite(performed) && performed > 0 && prescribed > 0) {
+      const ratio = (performed / prescribed) - 1;
+      d += 0.25 * clamp(ratio, -0.02, 0.02);
+    }
+    deltas[liftKey] = (deltas[liftKey] || 0) + d;
+  });
+  Object.keys(deltas).forEach((liftKey) => {
+    const prev = Number(p.liftAdjustments[liftKey] || 0);
+    const next = clamp(prev + deltas[liftKey], -0.05, 0.05);
+    p.liftAdjustments[liftKey] = next;
+  });
+  
+  // Update block history with completed session data
+  state.blockHistory = state.blockHistory || [];
+  const currentBlockId = `${state.activeProfile}_${state.currentBlock?.seed}`;
+  const blockEntry = state.blockHistory.find(b => b.id === currentBlockId);
+  
+  if (blockEntry && blockEntry.weeks[weekIndex] && blockEntry.weeks[weekIndex].days[dayIndex]) {
+    const dayEntry = blockEntry.weeks[weekIndex].days[dayIndex];
+    dayEntry.completed = true;
+    dayEntry.completedDate = todayISO();
+    
+    // Save actual performance data
+    dayEntry.exercises.forEach((ex, exIndex) => {
+      const scheme = buildSetScheme(dayPlan.work[exIndex], ex.liftKey, p);
+      const actualSets = [];
+      
+      scheme.forEach((s, setIndex) => {
+        const recKey = `${exIndex}:${setIndex}`;
+        const rec = dayLog[recKey] || {};
+        actualSets.push({
+          setNumber: setIndex + 1,
+          tag: s.tag,
+          weight: rec.weight || null,
+          reps: rec.reps || null,
+          rpe: rec.rpe || null,
+          action: rec.action || null
+        });
+      });
+      
+      ex.actualSets = actualSets;
+    });
+  }
+  
+  // Keep old history format for backward compatibility (for now)
+  state.completedDays = state.completedDays || {};
+  state.completedDays[`${state.activeProfile}|w${weekIndex}|d${dayIndex}`] = true;
+  state.history = state.history || [];
+  state.history.unshift({
+    profileName: state.activeProfile,
+    dateISO: todayISO(),
+    weekIndex,
+    dayIndex,
+    title: dayPlan.title,
+    session
+  });
+  
+  saveState();
+  renderWorkout();
+  renderHistory();
+  notify('Session completed');
+}
+
+function getSelectedDays(type) {
+  const p = getProfile();
+  if (!p) return [];
+  if (type === 'main') return Array.isArray(p.mainDays) ? p.mainDays.slice() : [];
+  if (type === 'accessory') return Array.isArray(p.accessoryDays) ? p.accessoryDays.slice() : [];
+  return [];
+}
+
+function setSelectedDays(type, days) {
+  const p = getProfile();
+  if (!p) return;
+  const uniq = Array.from(new Set((days || []).map(d => Number(d)).filter(Boolean))).sort((a, b) => a - b);
+  if (type === 'main') p.mainDays = uniq;
+  if (type === 'accessory') p.accessoryDays = uniq;
+  saveState();
+}
+
+function syncDaySelectorUI() {
+  const p = getProfile();
+  const main = new Set((p.mainDays || []).map(Number));
+  const acc = new Set((p.accessoryDays || []).map(Number));
+  document.querySelectorAll('#mainDaySelector .day-btn').forEach(btn => {
+    const d = Number(btn.dataset.day);
+    btn.classList.toggle('active', main.has(d));
+    btn.classList.toggle('disabled', acc.has(d));
+  });
+  document.querySelectorAll('#accessoryDaySelector .day-btn').forEach(btn => {
+    const d = Number(btn.dataset.day);
+    btn.classList.toggle('active', acc.has(d));
+    btn.classList.toggle('disabled', main.has(d));
+  });
+}
+
+let daySelectorBound = false;
+
+function ensureDaySelectorsBound() {
+  if (daySelectorBound) return;
+  daySelectorBound = true;
+  bindDaySelectorHandlers();
+}
+
+function bindDaySelectorHandlers() {
+  const mainWrap = $('mainDaySelector');
+  const accWrap = $('accessoryDaySelector');
+  if (!mainWrap || !accWrap) return;
+  const p = getProfile();
+  if (!Array.isArray(p.mainDays)) p.mainDays = [];
+  if (!Array.isArray(p.accessoryDays)) p.accessoryDays = [];
+  const onClick = (e) => {
+    const btn = e.target.closest('.day-btn');
+    if (!btn) return;
+    e.preventDefault();
+    const day = Number(btn.dataset.day);
+    const type = btn.dataset.type;
+    const otherType = type === 'main' ? 'accessory' : 'main';
+    let days = getSelectedDays(type);
+    const isActive = days.includes(day);
+    if (isActive) {
+      setSelectedDays(type, days.filter(d => d !== day));
+      syncDaySelectorUI();
+      return;
+    }
+    let other = getSelectedDays(otherType);
+    if (other.includes(day)) {
+      setSelectedDays(otherType, other.filter(d => d !== day));
+    }
+    days.push(day);
+    setSelectedDays(type, days);
+    syncDaySelectorUI();
+  };
+  mainWrap.replaceWith(mainWrap.cloneNode(true));
+  accWrap.replaceWith(accWrap.cloneNode(true));
+  const newMainWrap = $('mainDaySelector');
+  const newAccWrap = $('accessoryDaySelector');
+  if (newMainWrap) newMainWrap.addEventListener('click', onClick);
+  if (newAccWrap) newAccWrap.addEventListener('click', onClick);
+  syncDaySelectorUI();
+}
+
+function wireButtons() {
+  $('btnAI')?.addEventListener('click', () => {
+    openModal('🤖 AI Assistant', 'Placeholder', '<div class="help">AI features not enabled yet.</div>');
+  });
+  $('navSetup')?.addEventListener('click', () => showPage('Setup'));
+  $('navDashboard')?.addEventListener('click', () => showPage('Dashboard'));
+  $('navWorkout')?.addEventListener('click', () => showPage('Workout'));
+  $('navHistory')?.addEventListener('click', () => showPage('History'));
+  $('navSettings')?.addEventListener('click', () => showPage('Settings'));
+  $('setupProfileSelect')?.addEventListener('change', (e) => {
+    setActiveProfile(e.target.value);
+    renderSetup();
+  });
+  $('btnSetupNewProfile')?.addEventListener('click', () => {
+    const row = $('setupNewProfileRow');
+    if (row) row.style.display = (row.style.display === 'none' || !row.style.display) ? 'flex' : 'none';
+  });
+  $('btnSetupCreateProfile')?.addEventListener('click', () => {
+    const name = ($('setupNewProfileName')?.value || '').trim();
+    if (!name) return;
+    if (state.profiles[name]) {
+      alert('Profile exists.');
+      return;
+    }
+    const p = DEFAULT_PROFILE();
+    p.name = name;
+    state.profiles[name] = p;
+    state.activeProfile = name;
+    saveState();
+    $('setupNewProfileName').value = '';
+    $('setupNewProfileRow').style.display = 'none';
+    renderSetup();
+  });
+  $('setupInjuryPreset')?.addEventListener('change', (e) => {
+    const val = e.target.value;
+    const grid = $('injuryAdvancedGrid');
+    const hint = $('injuryAdvancedHint');
+    if (val === 'multiple') {
+      if (grid) grid.style.display = 'block';
+      if (hint) hint.style.display = 'block';
+    } else {
+      if (grid) grid.style.display = 'none';
+      if (hint) hint.style.display = 'none';
+    }
+  });
+  $('btnGenerateBlock')?.addEventListener('click', generateBlockFromSetup);
+  $('btnDemo')?.addEventListener('click', () => {
+    const demo = { snatch: 80, cj: 100, fs: 130, bs: 150, pushPress: 70, strictPress: 55 };
+    $('setupSnatch').value = demo.snatch;
+    $('setupCleanJerk').value = demo.cj;
+    $('setupFrontSquat').value = demo.fs;
+    $('setupBackSquat').value = demo.bs;
+    $('setupPushPress').value = demo.pushPress;
+    $('setupStrictPress').value = demo.strictPress;
+    notify('Demo maxes loaded');
+  });
+  $('btnGoWorkout')?.addEventListener('click', () => showPage('Workout'));
+  
+  // ========================================
+  // v7.45: CLOUD SYNC BUTTONS
+  // ========================================
+  
+  $('btnPushToCloud')?.addEventListener('click', async () => {
+    await pushBlockToCloud();
+  });
+  
+  $('btnPullFromCloud')?.addEventListener('click', async () => {
+    await pullBlocksFromCloud();
+  });
+  
+  // ========================================
+  // v7.41: Dashboard Import/Export Buttons
+  // ========================================
+  
+  // Export current block
+  $('btnExportCurrentBlock')?.addEventListener('click', () => {
+    const block = state.currentBlock;
+    if (!block) {
+      alert('⚠️ No training block to export. Generate a block first.');
+      return;
+    }
+    exportBlock(block);
+  });
+  
+  // Import block (uses unified system)
+  $('btnImportBlock')?.addEventListener('click', () => {
+    console.log('🔘 Dashboard Import button clicked');
+    triggerUnifiedImport('Dashboard');
+  });
+  
+  // ========================================
+  // v7.41: History Import Button
+  // NEW: Adds import capability to History tab
+  // ========================================
+  
+  $('btnImportBlock_History')?.addEventListener('click', () => {
+    console.log('🔘 History Import button clicked');
+    triggerUnifiedImport('History');
+  });
+  
+  // ========================================
+  // v7.41: UNIFIED IMPORT SYSTEM
+  // Location-agnostic import that updates ALL tabs
+  // ========================================
+  
+  /**
+   * Unified Training Block Import Handler
+   * Can be triggered from Dashboard, History, or any tab
+   * Updates global state and refreshes ALL views
+   * @param {string} csvText - The CSV content
+   * @param {string} sourceTab - Which tab triggered the import
+   * @returns {boolean} - Success status
+   */
+  function unifiedBlockImport(csvText, sourceTab = 'unknown') {
+    console.log(`📥 UNIFIED IMPORT: Starting from ${sourceTab} tab`);
+    console.log(`📥 UNIFIED IMPORT: CSV length: ${csvText.length} chars`);
+    
     try {
-        const hasNew = localStorage.getItem(newKey);
-        const legacy = localStorage.getItem(legacyKey);
-        if (!hasNew && legacy) {
-            localStorage.setItem(newKey, legacy);
-        }
+      // Parse the CSV using existing importBlock function
+      const result = importBlock(csvText);
+      
+      if (!result.success) {
+        console.error(`📥 UNIFIED IMPORT: Parse failed:`, result.error);
+        alert(`❌ Import failed: ${result.error}\n\nMake sure you're importing a Training Block CSV.\n\nExpected format:\nWeek,Day,Exercise,Sets,Reps,Percentage,Notes`);
+        return false;
+      }
+      
+      const block = result.block;
+      console.log(`📥 UNIFIED IMPORT: Parse successful`);
+      console.log(`📥 UNIFIED IMPORT: Block details:`, {
+        programType: block.programType,
+        weeks: block.weeks.length,
+        startDate: block.startDateISO
+      });
+      
+      // Calculate stats for confirmation dialog
+      const daysCount = block.weeks.reduce((sum, w) => sum + w.days.length, 0);
+      const exercisesCount = block.weeks.reduce((sum, w) => 
+        sum + w.days.reduce((s, d) => s + (d.work?.length || 0), 0), 0);
+      
+      console.log(`📥 UNIFIED IMPORT: Stats - ${daysCount} days, ${exercisesCount} exercises`);
+      
+      // Confirm with user
+      const confirmMsg = `Import training block?\n\n` +
+        `• Program: ${block.programType}\n` +
+        `• Length: ${block.weeks.length} weeks\n` +
+        `• Training days: ${daysCount}\n` +
+        `• Exercises: ${exercisesCount}\n\n` +
+        `This will REPLACE your current training block.`;
+      
+      if (!confirm(confirmMsg)) {
+        console.log(`📥 UNIFIED IMPORT: User cancelled`);
+        return false;
+      }
+      
+      // ========================================
+      // CRITICAL SECTION: Update Global State
+      // This is the single source of truth
+      // ========================================
+      console.log(`📥 UNIFIED IMPORT: Updating global state...`);
+      
+      state.currentBlock = block;
+      ui.weekIndex = 0; // Reset to week 1
+      
+      console.log(`📥 UNIFIED IMPORT: ✓ state.currentBlock updated`);
+      console.log(`📥 UNIFIED IMPORT: ✓ programType = "${state.currentBlock.programType}"`);
+      
+      // ========================================
+      // CRITICAL SECTION: Persist to localStorage
+      // Ensures data survives page refresh
+      // ========================================
+      console.log(`📥 UNIFIED IMPORT: Saving to localStorage...`);
+      saveState();
+      console.log(`📥 UNIFIED IMPORT: ✓ localStorage updated`);
+      
+      // ========================================
+      // CRITICAL SECTION: Refresh ALL Views
+      // MUST happen in this order
+      // ========================================
+      console.log(`📥 UNIFIED IMPORT: Refreshing all views...`);
+      
+      // 1. Dashboard (shows block summary)
+      renderDashboard();
+      console.log(`📥 UNIFIED IMPORT: ✓ Dashboard rendered`);
+      
+      // 2. Workout (shows training plan)
+      renderWorkout();
+      console.log(`📥 UNIFIED IMPORT: ✓ Workout rendered`);
+      
+      // 3. History (may show current block indicator)
+      renderHistory();
+      console.log(`📥 UNIFIED IMPORT: ✓ History rendered`);
+      
+      // ========================================
+      // Navigate to Workout tab
+      // ========================================
+      console.log(`📥 UNIFIED IMPORT: Navigating to Workout...`);
+      showPage('Workout');
+      
+      // Force final render after navigation completes
+      // This ensures the Workout tab is fully refreshed
+      setTimeout(() => {
+        renderWorkout();
+        renderDashboard(); // v7.41: Also re-render Dashboard to fix desync
+        console.log(`📥 UNIFIED IMPORT: ✓ Final render complete`);
+        console.log(`📥 UNIFIED IMPORT: Final verification:`, {
+          currentBlock: !!state.currentBlock,
+          programType: state.currentBlock?.programType,
+          weeks: state.currentBlock?.weeks?.length
+        });
+      }, 100);
+      
+      // Success notification
+      notify(`✅ Training block imported successfully!`);
+      console.log(`📥 UNIFIED IMPORT: ✅ Import complete!`);
+      
+      return true;
+      
+    } catch (err) {
+      console.error(`📥 UNIFIED IMPORT: Exception:`, err);
+      console.error(`📥 UNIFIED IMPORT: Stack:`, err.stack);
+      alert(`❌ Import failed: ${err.message}\n\nCheck the browser console (F12) for details.`);
+      return false;
     }
-    catch (e) { }
-})();
-// ==================== MAIN APP ====================
-function TrainIQ() {
-    const [tab, setTab] = useState('home');
-    const DEFAULT_CONFIG = {
-        experience: '',
-        days: '',
-        time: '',
-        programType: '',
-        supersets: false,
-        advancedTechniques: false,
-        oneRMs: { chest: '', lats: '', shoulders: '', quads: '', hamstrings: '' },
-        // Warm-up preferences
-        warmups: {
-            enabled: true,
-            mode: 'full', // 'minimal' | 'full'
-            onlyCompounds: false
-        }
-    };
-    const [config, setConfig] = useState(DEFAULT_CONFIG);
-    const [program, setProgram] = useState(null);
-    const [history, setHistory] = useState([]);
-    useEffect(() => {
-        const saved = storage.get('state', null);
-        if (saved) {
-            const data = saved;
-            if (data.config) {
-                // Merge defaults to support older saved profiles
-                const merged = {
-                    ...DEFAULT_CONFIG,
-                    ...data.config,
-                    oneRMs: { ...DEFAULT_CONFIG.oneRMs, ...(data.config.oneRMs || {}) },
-                    warmups: { ...DEFAULT_CONFIG.warmups, ...(data.config.warmups || {}) }
-                };
-                setConfig(merged);
-            }
-            if (data.program)
-                setProgram(data.program);
-            if (data.history)
-                setHistory(data.history);
-        }
-    }, []);
-    useEffect(() => {
-        storage.set('state', { config, program, history });
-    }, [config, program, history]);
-    const handleGenerate = () => {
-        if (program) {
-            setHistory(prev => [program, ...prev].slice(0, 10));
-        }
-        const newProgram = generateProgram(config);
-        setProgram(newProgram);
-        setTab('workouts');
-    };
-    return (React.createElement("div", { className: "min-h-screen app-bg" },
-        tab === 'home' && (React.createElement(HomeScreen, { config: config, setConfig: setConfig, onGenerate: handleGenerate })),
-        tab === 'workouts' && program && (React.createElement(WorkoutsScreen, { program: program, config: config, setProgram: setProgram, onSave: () => {
-                if (program && !history.find(p => p.createdAt === program.createdAt)) {
-                    setHistory(prev => [program, ...prev].slice(0, 10));
-                }
-            } })),
-        tab === 'history' && (React.createElement(HistoryScreen, { history: history, onDelete: (idx) => setHistory(prev => prev.filter((_, i) => i !== idx)) })),
-        tab === 'settings' && (React.createElement(SettingsScreen, { config: config, setConfig: setConfig })),
-        React.createElement(TabBar, { tab: tab, setTab: setTab, hasProgram: !!program })));
-}
-// ==================== HOME SCREEN ====================
-function HomeScreen({ config, setConfig, onGenerate }) {
-    const isValid = config.experience && config.days && config.time && config.programType;
-    return (React.createElement("div", { className: "content-with-tabs px-4 pt-8 pb-32 max-w-2xl mx-auto" },
-        React.createElement("div", { className: "text-center mb-10" },
-            React.createElement("div", { className: "w-20 h-20 mx-auto mb-4 rounded-2xl ring-premium overflow-hidden" },
-                React.createElement("img", { src: "logo.jpg", alt: "TrainIQ", className: "w-full h-full object-cover" })),
-            React.createElement("h1", { className: "font-display text-5xl font-bold mb-1 premium-gradient bg-clip-text text-transparent" }, "TRAINIQ"),
-            React.createElement("p", { className: "text-gray-500 text-xs font-semibold tracking-wider" }, "EVIDENCE-BASED TRAINING")),
-        React.createElement("div", { className: "mb-6 rounded-2xl overflow-hidden ring-premium" },
-            React.createElement("div", { className: "relative" },
-                React.createElement("img", { src: "hero.jpg", alt: "TrainIQ Hero", className: "w-full h-44 object-cover" }),
-                React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" }),
-                React.createElement("div", { className: "absolute bottom-3 left-4 right-4" },
-                    React.createElement("div", { className: "flex items-end justify-between gap-3" },
-                        React.createElement("div", null,
-                            React.createElement("div", { className: "text-xs font-bold tracking-wider text-gray-300" }, "PREMIUM PROGRAMMING"),
-                            React.createElement("div", { className: "text-lg font-semibold" }, "Built for progression, not randomness.")),
-                        React.createElement("div", { className: "hidden sm:flex items-center gap-2" },
-                            React.createElement("div", { className: "px-3 py-1 rounded-full glass text-[11px] font-bold tracking-wider text-gray-200" }, "RIR"),
-                            React.createElement("div", { className: "px-3 py-1 rounded-full glass text-[11px] font-bold tracking-wider text-gray-200" }, "DELoads"),
-                            React.createElement("div", { className: "px-3 py-1 rounded-full glass text-[11px] font-bold tracking-wider text-gray-200" }, "PERIODIZATION")))))),
-        React.createElement("div", { className: "space-y-5" },
-            React.createElement("div", null,
-                React.createElement("label", { className: "block text-xs font-bold text-gray-400 mb-2 tracking-wide flex items-center gap-2" },
-                    "EXPERIENCE LEVEL",
-                    React.createElement("button", { type: "button", className: "text-gray-400 hover:text-white text-sm", onClick: () => alert("Beginner: New to structured training, focus on technique and consistency.\n\n" +
-                            "Intermediate: 6–24 months of training with solid form and progressive overload.\n\n" +
-                            "Advanced: 2+ years of consistent training, high intensity and volume tolerance.") }, "\u2139\uFE0F")),
-                React.createElement("div", { className: "grid grid-cols-3 gap-2" }, ['Beginner', 'Intermediate', 'Advanced'].map(lvl => (React.createElement("button", { key: lvl, onClick: () => setConfig({ ...config, experience: lvl }), className: "p-3 rounded-xl font-semibold text-sm transition btn-touch " +
-                        (config.experience === lvl ? "premium-gradient text-white shadow-lg" : "glass text-gray-300") }, lvl))))),
-            React.createElement("div", null,
-                React.createElement("label", { className: "block text-xs font-bold text-gray-400 mb-2 tracking-wide" }, "TRAINING DAYS"),
-                React.createElement("div", { className: "grid grid-cols-4 gap-2" }, ['3', '4', '5', '6'].map(d => (React.createElement("button", { key: d, onClick: () => setConfig({ ...config, days: d }), className: "p-4 rounded-xl font-bold text-2xl transition btn-touch " +
-                        (config.days === d ? "premium-gradient text-white shadow-lg" : "glass text-gray-300") }, d))))),
-            React.createElement("div", null,
-                React.createElement("label", { className: "block text-xs font-bold text-gray-400 mb-2 tracking-wide" }, "SESSION LENGTH"),
-                React.createElement("div", { className: "grid grid-cols-3 gap-2" }, ['45min', '60min', '75min'].map(t => (React.createElement("button", { key: t, onClick: () => setConfig({ ...config, time: t }), className: "p-3 rounded-xl font-semibold transition btn-touch " +
-                        (config.time === t ? "premium-gradient text-white shadow-lg" : "glass text-gray-300") }, t))))),
-            React.createElement("div", null,
-                React.createElement("label", { className: "block text-xs font-bold text-gray-400 mb-2 tracking-wide" }, "PROGRAM TYPE"),
-                React.createElement("div", { className: "relative" },
-                    React.createElement("select", { value: config.programType, onChange: (e) => setConfig({ ...config, programType: e.target.value }), className: "w-full p-4 pr-12 rounded-xl glass bg-black/40 text-white font-semibold border border-white/10 outline-none focus:ring-2 focus:ring-orange-500 appearance-none" },
-                        React.createElement("option", { value: "", style: { backgroundColor: '#0b0b0b', color: '#ffffff' } }, "Select Program Type"),
-                        React.createElement("option", { value: "Hypertrophy", style: { backgroundColor: '#0b0b0b', color: '#ffffff' } }, "Hypertrophy"),
-                        React.createElement("option", { value: "Strength", style: { backgroundColor: '#0b0b0b', color: '#ffffff' } }, "Strength"),
-                        React.createElement("option", { value: "Powerbuilding", style: { backgroundColor: '#0b0b0b', color: '#ffffff' } }, "Powerbuilding"),
-                        React.createElement("option", { value: "Minimalist", style: { backgroundColor: '#0b0b0b', color: '#ffffff' } }, "Minimalist")),
-                    React.createElement("div", { className: "pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-300" },
-                        React.createElement("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" },
-                            React.createElement("path", { d: "m6 9 6 6 6-6" }))))),
-            React.createElement("div", { className: "flex items-center justify-between p-4 rounded-xl glass" },
-                React.createElement("span", { className: "font-semibold text-sm" }, "SUPERSETS"),
-                React.createElement("button", { onClick: () => setConfig({ ...config, supersets: !config.supersets }), className: "w-14 h-8 rounded-full transition " + (config.supersets ? "bg-orange-500" : "bg-gray-700") },
-                    React.createElement("div", { className: "w-6 h-6 rounded-full bg-white transition-transform " + (config.supersets ? "translate-x-7" : "translate-x-1") }))),
-            React.createElement("div", { className: "flex items-center justify-between p-4 rounded-xl glass mt-3" },
-                React.createElement("div", null,
-                    React.createElement("div", { className: "font-semibold text-sm" }, "ADVANCED TECHNIQUES"),
-                    React.createElement("div", { className: "text-xs text-gray-400 mt-0.5" }, "Enable drop sets, rest-pause, myo-reps and more (applied to safe accessory work).")),
-                React.createElement("button", { onClick: onGenerate, disabled: !isValid, className: "w-full p-5 rounded-xl font-display font-bold text-lg transition btn-touch " +
-                        (isValid ? "premium-gradient text-white shadow-xl" : "glass text-gray-600 cursor-not-allowed") }, "GENERATE PROGRAM"))),
-        React.createElement("button", { onClick: () => setConfig({ ...config, advancedTechniques: !config.advancedTechniques }), className: "w-14 h-8 rounded-full transition " + (config.advancedTechniques ? "bg-orange-500" : "bg-gray-700"), "aria-label": "Toggle advanced training techniques" },
-            React.createElement("div", { className: "w-6 h-6 rounded-full bg-white transition-transform " + (config.advancedTechniques ? "translate-x-7" : "translate-x-1"), style: { marginTop: '4px' } }))));
-}
-// ==================== WORKOUTS SCREEN ====================
-function WorkoutsScreen({ program, config, setProgram, onSave }) {
-    const [week, setWeek] = useState(1);
-    const currentWeek = program.weeks[week - 1];
-    // Persist per-workout edits (swap / delete / set +/-) back into the program
-    // so SAVE/History reflect the customized version.
-    const updateWorkoutExercises = (workoutIndex, nextExercises) => {
-        if (typeof setProgram !== 'function')
-            return;
-        setProgram(prev => {
-            if (!prev || !Array.isArray(prev.weeks) || !prev.weeks[week - 1])
-                return prev;
-            const weeks = prev.weeks.slice();
-            const weekObj = { ...weeks[week - 1] };
-            const workouts = (weekObj.workouts || []).slice();
-            const current = workouts[workoutIndex];
-            if (!current)
-                return prev;
-            // Deep-ish clone exercises to avoid shared references
-            const safeExercises = Array.isArray(nextExercises)
-                ? nextExercises.map(e => (e ? { ...e } : e))
-                : [];
-            workouts[workoutIndex] = { ...current, exercises: safeExercises };
-            weekObj.workouts = workouts;
-            weeks[week - 1] = weekObj;
-            return { ...prev, weeks };
-        });
-    };
-    return (React.createElement("div", { className: "content-with-tabs" },
-        React.createElement("div", { className: "sticky top-0 bg-black/95 backdrop-blur-lg border-b border-white/10 pb-3 z-10" },
-            React.createElement("div", { className: "px-4 pt-4" },
-                React.createElement("div", { className: "flex items-center justify-between mb-3" },
-                    React.createElement("div", null,
-                        React.createElement("h2", { className: "font-display font-bold text-lg" },
-                            "WEEK ",
-                            week,
-                            " OF 12"),
-                        React.createElement("p", { className: "text-xs text-gray-400 mt-0.5" },
-                            currentWeek.phase,
-                            " Phase")),
-                    React.createElement("button", { onClick: onSave, className: "px-4 py-2 rounded-lg bg-blue-500 text-white text-xs font-bold" }, "SAVE")),
-                React.createElement("div", { className: "flex gap-2 overflow-x-auto pb-2" }, program.weeks.map(w => (React.createElement("button", { key: w.number, onClick: () => setWeek(w.number), className: "px-3 py-2 rounded-lg font-bold text-sm whitespace-nowrap transition " +
-                        (week === w.number ? "premium-gradient text-white" :
-                            w.deload ? "bg-yellow-500/20 text-yellow-400" : "glass text-gray-400") }, w.deload ? `W${w.number} ↓` : `W${w.number}`)))))),
-        React.createElement("div", { className: "px-4 py-4 space-y-3" }, currentWeek.workouts.map((workout, i) => (
-        // IMPORTANT: use a stable key so WorkoutCard state doesn't bleed across week/day changes.
-        React.createElement(WorkoutCard, { key: `${week}-${workout.dayNumber}`, workout: workout, warmupPrefs: config === null || config === void 0 ? void 0 : config.warmups, onUpdateExercises: (next) => updateWorkoutExercises(i, next) }))))));
-}
-// ==================== WORKOUT CARD ====================
-function WorkoutCard({ workout, warmupPrefs, onUpdateExercises }) {
-    const [open, setOpen] = useState(false);
-    // Keep a local copy so swaps don't mutate the generated program state.
-    // IMPORTANT: this must resync whenever "workout" changes (week switch, regen, etc.)
-    // or else the "Change" button will only work for the first rendered card due to stale state.
-    const [exercises, setExercises] = useState(() => (workout.exercises || []).map(ex => ({ ...ex })));
-    const [swapState, setSwapState] = useState({ open: false, index: null, options: [], title: '', anchor: null });
-    const [techModal, setTechModal] = useState({ open: false, technique: null });
-    const openTechnique = (technique) => setTechModal({ open: true, technique });
-    const closeTechnique = () => setTechModal({ open: false, technique: null });
-    useEffect(() => {
-        setExercises((workout.exercises || []).map(ex => ({ ...ex })));
-        // Close any open chooser when switching workouts to avoid index mismatch.
-        setSwapState({ open: false, index: null, options: [], title: '', anchor: null });
-    }, [workout]);
-    const openSwap = (ex, index, evt) => {
-        var _a, _b;
-        const opts = getAlternativesForExercise(ex.originalName || ex.name, { role: ex.role || 'accessory' });
-        // Anchor the chooser close to the clicked button so users don't have to scroll.
-        let anchor = null;
-        try {
-            const rect = (_b = (_a = evt === null || evt === void 0 ? void 0 : evt.currentTarget) === null || _a === void 0 ? void 0 : _a.getBoundingClientRect) === null || _b === void 0 ? void 0 : _b.call(_a);
-            if (rect) {
-                anchor = { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right, width: rect.width, height: rect.height };
-            }
-        }
-        catch (e) {
-            anchor = null;
-        }
-        setSwapState({
-            open: true,
-            index,
-            options: opts,
-            title: ex.originalName ? `${ex.name} (alt)` : ex.name,
-            anchor
-        });
-    };
-    const recomputeWarmups = (ex) => {
-        try {
-            const ctx = ex === null || ex === void 0 ? void 0 : ex._warmupContext;
-            if (ctx) {
-                return buildWarmupSets(ex, ctx.programType, ctx.phaseName, ctx.dayIntent, ctx.experience, warmupPrefs);
-            }
-        }
-        catch (e) { }
-        // Fallback: keep existing warmups if context missing
-        return Array.isArray(ex === null || ex === void 0 ? void 0 : ex.warmups) ? ex.warmups : [];
-    };
-    const commit = (out) => {
-        if (typeof onUpdateExercises === 'function')
-            onUpdateExercises(out);
-        return out;
-    };
-    const applySwap = (chosen) => {
-        setExercises(prev => {
-            if (!Array.isArray(prev))
-                return prev;
-            const idx = swapState.index;
-            if (idx === null || idx === undefined || !prev[idx])
-                return prev;
-            const current = prev[idx];
-            const originalName = current.originalName || current.name;
-            const updated = {
-                ...current,
-                name: chosen.name,
-                originalName,
-                // Keep stimulus tags available for future features
-                tags: getExerciseTags(chosen.name) || current.tags || null
-            };
-            updated.warmups = recomputeWarmups(updated);
-            const out = prev.slice();
-            out[idx] = updated;
-            return commit(out);
-        });
-        setSwapState({ open: false, index: null, options: [], title: '', anchor: null });
-    };
-    const closeSwap = () => setSwapState({ open: false, index: null, options: [], title: '', anchor: null });
-    const deleteExercise = (index) => {
-        setExercises(prev => {
-            if (!Array.isArray(prev) || !prev[index])
-                return prev;
-            const target = prev[index];
-            // If part of a superset, handle partner cleanup.
-            if (target.superset && target.superset.group) {
-                const group = target.superset.group;
-                const pos = target.superset.position;
-                const out = prev.slice();
-                if (pos === 1) {
-                    // Delete partner too if it exists as the next exercise or anywhere in list.
-                    // (Keeps UI clean; avoids orphaned A2.)
-                    const partnerIdx = out.findIndex((e, i) => { var _a; return i !== index && ((_a = e === null || e === void 0 ? void 0 : e.superset) === null || _a === void 0 ? void 0 : _a.group) === group; });
-                    // Remove higher index first to avoid shifting
-                    const toRemove = [index];
-                    if (partnerIdx >= 0)
-                        toRemove.push(partnerIdx);
-                    toRemove.sort((a, b) => b - a).forEach(i => out.splice(i, 1));
-                    return commit(out);
-                }
-                // If deleting the A2, keep A1 but strip its superset metadata.
-                out.splice(index, 1);
-                const leaderIdx = out.findIndex(e => { var _a; return ((_a = e === null || e === void 0 ? void 0 : e.superset) === null || _a === void 0 ? void 0 : _a.group) === group; });
-                if (leaderIdx >= 0) {
-                    out[leaderIdx] = { ...out[leaderIdx], superset: null };
-                }
-                return commit(out);
-            }
-            // Normal deletion
-            const out = prev.slice();
-            out.splice(index, 1);
-            return commit(out);
-        });
-    };
-    const adjustSets = (index, delta) => {
-        setExercises(prev => {
-            if (!Array.isArray(prev) || !prev[index])
-                return prev;
-            const ex = prev[index];
-            // Main/secondary: keep at least 1 set; accessories: at least 1 set.
-            const next = Math.max(1, Math.min(10, (parseInt(ex.sets, 10) || 1) + delta));
-            const out = prev.slice();
-            const updated = { ...ex, sets: next };
-            updated.warmups = recomputeWarmups(updated);
-            out[index] = updated;
-            return commit(out);
-        });
-    };
-    return (React.createElement("div", { className: "glass rounded-xl overflow-hidden" },
-        React.createElement("button", { onClick: () => setOpen(!open), className: "w-full p-4 flex items-center justify-between hover:bg-white/5 transition btn-touch" },
-            React.createElement("div", { className: "flex items-center gap-3" },
-                React.createElement("div", { className: "w-12 h-12 rounded-lg premium-gradient flex items-center justify-center font-display font-bold text-sm" },
-                    "D",
-                    workout.dayNumber),
-                React.createElement("div", { className: "text-left" },
-                    React.createElement("h3", { className: "font-bold text-sm" },
-                        workout.dayType,
-                        " Day"),
-                    React.createElement("p", { className: "text-xs text-gray-400" },
-                        exercises.length,
-                        " exercises"))),
-            React.createElement("span", { className: "transition text-orange-400 " + (open ? "rotate-180" : "") }, "\u25BC")),
-        open && (React.createElement("div", { className: "px-4 pb-4 space-y-2" }, (() => {
-            const roleLabel = (role) => {
-                if (role === 'main')
-                    return { text: 'MAIN LIFT', cls: 'bg-orange-500/20 text-orange-300' };
-                if (role === 'secondary')
-                    return { text: 'SECONDARY LIFT', cls: 'bg-blue-500/20 text-blue-300' };
-                return { text: 'ACCESSORY', cls: 'bg-gray-500/20 text-gray-300' };
-            };
-            const ExerciseCard = ({ ex, index, showRest = true, ssOrder = null, canSwap = true }) => {
-                const role = roleLabel(ex.role);
-                return (React.createElement("div", { className: "p-3 rounded-lg bg-black/50 border border-white/5" },
-                    React.createElement("div", { className: "flex items-start justify-between gap-2 mb-2" },
-                        React.createElement("div", null,
-                            React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
-                                React.createElement("h4", { className: "font-semibold text-sm" }, ex.name),
-                                canSwap && (React.createElement("button", { onClick: (e) => openSwap(ex, index, e), className: (ex.role === 'main' || ex.role === 'secondary'
-                                        ? 'text-orange-200 border-orange-500/35 hover:bg-orange-500/10 '
-                                        : 'text-gray-200 border-white/15 hover:bg-white/10 ') +
-                                        'px-2 py-1 rounded-md border bg-white/5 text-[11px] font-bold btn-touch', title: "Choose a similar alternate exercise" }, "Change")),
-                                React.createElement("div", { className: "flex items-center gap-1" },
-                                    React.createElement("button", { type: "button", onClick: (e) => { e.preventDefault(); e.stopPropagation(); adjustSets(index, -1); }, className: "px-2 py-1 rounded-md border border-white/15 bg-white/5 text-[11px] font-bold text-gray-200 hover:bg-white/10 btn-touch", title: "Remove 1 set" }, "\u2212 Set"),
-                                    React.createElement("button", { type: "button", onClick: (e) => { e.preventDefault(); e.stopPropagation(); adjustSets(index, +1); }, className: "px-2 py-1 rounded-md border border-white/15 bg-white/5 text-[11px] font-bold text-gray-200 hover:bg-white/10 btn-touch", title: "Add 1 set" }, "+ Set"),
-                                    React.createElement("button", { type: "button", onClick: (e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            if (confirm(`Delete “${ex.name}” from this workout?`))
-                                                deleteExercise(index);
-                                        }, className: "px-2 py-1 rounded-md border border-red-500/25 bg-red-500/10 text-[11px] font-bold text-red-300 hover:bg-red-500/20 btn-touch", title: "Delete exercise" }, "Delete"))),
-                            ex.originalName && (React.createElement("div", { className: "text-[11px] text-gray-500 mt-0.5" },
-                                "Original: ",
-                                React.createElement("span", { className: "text-gray-300 font-semibold" }, ex.originalName)))),
-                        React.createElement("div", { className: "flex items-center gap-1.5" },
-                            ssOrder && (React.createElement("span", { className: "px-2 py-1 bg-purple-500/25 text-purple-200 rounded font-bold text-[11px]" }, ssOrder)),
-                            React.createElement("span", { className: `px-2 py-1 rounded font-bold text-[11px] ${role.cls}` }, role.text))),
-                    React.createElement("div", { className: "flex flex-wrap gap-1.5 text-xs mb-3" },
-                        React.createElement("span", { className: "px-2 py-1 bg-orange-500/20 text-orange-400 rounded font-bold" },
-                            React.createElement("span", { className: "opacity-75 font-extrabold tracking-wider mr-1" }, "SETS"),
-                            ex.sets,
-                            " \u00D7 ",
-                            ex.reps[0],
-                            "-",
-                            ex.reps[1]),
-                        showRest && (React.createElement("span", { className: "px-2 py-1 bg-purple-500/20 text-purple-400 rounded font-bold" },
-                            React.createElement("span", { className: "opacity-75 font-extrabold tracking-wider mr-1" }, "REST"),
-                            ex.rest)),
-                        React.createElement("span", { className: "px-2 py-1 bg-red-500/20 text-red-400 rounded font-bold" },
-                            React.createElement("span", { className: "opacity-75 font-extrabold tracking-wider mr-1" }, "EFFORT"),
-                            ex.rir,
-                            " RIR"),
-                        ex.technique && (React.createElement("button", { type: "button", onClick: (e) => { e.preventDefault(); e.stopPropagation(); openTechnique(ex.technique); }, className: "px-2 py-1 bg-emerald-500/15 text-emerald-300 rounded font-bold border border-emerald-500/20 hover:bg-emerald-500/20", title: "View technique instructions" },
-                            React.createElement("span", { className: "opacity-75 font-extrabold tracking-wider mr-1" }, "TECH"),
-                            ex.technique.name))),
-                    React.createElement("div", { className: "text-[11px] text-gray-500 mb-3 -mt-1" },
-                        "Target effort: finish each set with about ",
-                        React.createElement("span", { className: "font-bold text-gray-300" }, ex.rir),
-                        " reps in reserve (RIR)."),
-                    Array.isArray(ex.warmups) && ex.warmups.length > 0 && (React.createElement("div", { className: "mb-3" },
-                        React.createElement("div", { className: "text-xs font-extrabold tracking-wider text-gray-400 mb-1" }, "WARM-UP SETS"),
-                        React.createElement("div", { className: "space-y-1" }, ex.warmups.map((ws, i) => (React.createElement("div", { key: i, className: "flex items-center gap-2 p-2 rounded bg-black/20" },
-                            React.createElement("span", { className: "text-xs font-bold text-gray-500 w-12" },
-                                "WU ",
-                                i + 1),
-                            React.createElement("span", { className: "text-xs font-bold text-gray-200 w-16" },
-                                ws.reps,
-                                " reps"),
-                            ws.pct != null ? (React.createElement("span", { className: "text-xs text-gray-400" },
-                                "~",
-                                ws.pct,
-                                "%")) : (React.createElement("span", { className: "text-xs text-gray-400" }, ws.note || 'easy')),
-                            ws.weight && React.createElement("span", { className: "text-xs font-extrabold text-green-400 ml-auto" },
-                                "~",
-                                ws.weight))))))),
-                    React.createElement("div", { className: "space-y-2" }, Array.from({ length: ex.sets }).map((_, setIdx) => (React.createElement("div", { key: setIdx, className: "flex items-center gap-2 p-2 rounded bg-black/30" },
-                        React.createElement("span", { className: "text-xs font-bold text-gray-500 w-12" },
-                            "Set ",
-                            setIdx + 1),
-                        React.createElement("div", { className: "flex flex-col items-center w-20 sm:w-24" },
-                            ex.weight && React.createElement("div", { className: "text-[10px] font-bold text-green-400 -mb-1" },
-                                "~",
-                                ex.weight),
-                            React.createElement("input", { type: "number", placeholder: "lbs", className: "w-full p-2 rounded bg-black/50 border border-white/10 text-white text-sm text-center outline-none focus:border-orange-500" })),
-                        React.createElement("span", { className: "text-xs text-gray-600" }, "\u00D7"),
-                        React.createElement("input", { type: "number", placeholder: "reps", className: "w-20 sm:w-24 p-2 rounded bg-black/50 border border-white/10 text-white text-sm text-center outline-none focus:border-orange-500" }),
-                        React.createElement("input", { type: "number", placeholder: "RIR", min: "0", max: "6", className: "w-16 p-2 rounded bg-black/50 border border-white/10 text-white text-sm text-center outline-none focus:border-orange-500" })))))));
-            };
-            const items = [];
-            const exs = exercises || [];
-            for (let i = 0; i < exs.length; i++) {
-                const ex = exs[i];
-                if (!ex)
-                    continue;
-                // Skip A2 entries; they render inside the Superset group.
-                if (ex.superset && ex.superset.position === 2)
-                    continue;
-                if (ex.superset && ex.superset.position === 1) {
-                    const group = ex.superset.group;
-                    const partner = exs[i + 1];
-                    const hasPartner = partner && partner.superset && partner.superset.group === group;
-                    const between = ex.superset.betweenRest || '0-30s';
-                    const post = ex.superset.postRest || '60-120s';
-                    items.push(React.createElement("div", { key: `ss-${group}-${i}`, className: "p-3 rounded-xl bg-black/40 border border-white/10" },
-                        React.createElement("div", { className: "flex flex-col gap-1 mb-2" },
-                            React.createElement("div", { className: "flex items-center justify-between gap-2" },
-                                React.createElement("div", { className: "text-xs font-bold tracking-widest text-purple-200" },
-                                    "SUPERSET ",
-                                    group),
-                                React.createElement("span", { className: "px-2 py-1 bg-purple-500/20 text-purple-300 rounded font-bold text-[11px]" },
-                                    "No rest (or ",
-                                    between,
-                                    ") between")),
-                            hasPartner ? (React.createElement("div", { className: "text-xs text-gray-300" },
-                                "Do ",
-                                React.createElement("span", { className: "font-bold text-white" }, ex.name),
-                                " \u2192 ",
-                                React.createElement("span", { className: "font-bold text-white" }, partner.name),
-                                ", then rest ",
-                                React.createElement("span", { className: "font-bold text-white" }, post),
-                                ".")) : (React.createElement("div", { className: "text-xs text-gray-400" }, "Superset enabled, but partner exercise not found for this group."))),
-                        React.createElement("div", { className: "space-y-2" },
-                            React.createElement(ExerciseCard, { key: `ex-${i}`, ex: ex, index: i, showRest: false, ssOrder: `${group}1` }),
-                            hasPartner && React.createElement(ExerciseCard, { key: `ex-${i + 1}`, ex: partner, index: i + 1, showRest: false, ssOrder: `${group}2` })),
-                        React.createElement("div", { className: "mt-2 text-xs text-gray-400" },
-                            "Rest ",
-                            React.createElement("span", { className: "font-bold text-gray-200" }, post),
-                            " after completing both exercises.")));
-                    continue;
-                }
-                // Normal (non-superset) exercise card.
-                items.push(React.createElement(ExerciseCard, { key: `ex-${i}`, ex: ex, index: i, showRest: true }));
-            }
-            return items;
-        })())),
-        swapState.open && (() => {
-            var _a, _b, _c, _d, _e, _f, _g, _h;
-            const isMobile = (typeof window !== 'undefined') ? window.innerWidth < 640 : true;
-            const vh = (typeof window !== 'undefined') ? window.innerHeight : 800;
-            const vw = (typeof window !== 'undefined') ? window.innerWidth : 1200;
-            const anchorTop = (_b = (_a = swapState.anchor) === null || _a === void 0 ? void 0 : _a.top) !== null && _b !== void 0 ? _b : 80;
-            const anchorBottom = (_d = (_c = swapState.anchor) === null || _c === void 0 ? void 0 : _c.bottom) !== null && _d !== void 0 ? _d : 100;
-            const anchorLeft = (_f = (_e = swapState.anchor) === null || _e === void 0 ? void 0 : _e.left) !== null && _f !== void 0 ? _f : Math.round(vw / 2);
-            const anchorRight = (_h = (_g = swapState.anchor) === null || _g === void 0 ? void 0 : _g.right) !== null && _h !== void 0 ? _h : Math.round(vw / 2);
-            // Position the chooser beside the clicked "Change" button (within the viewport),
-            // even for exercises further down the page.
-            // Heuristic panel height: our max content height is ~55vh plus header/padding.
-            const panelH = Math.min(Math.round(vh * 0.72), 560);
-            const panelW = isMobile ? Math.min(vw - 24, 420) : 420;
-            const margin = 12;
-            const belowTop = anchorBottom + 10;
-            const aboveTop = anchorTop - 10 - panelH;
-            const hasRoomBelow = (belowTop + panelH) <= (vh - margin);
-            const hasRoomAbove = aboveTop >= margin;
-            const top = hasRoomBelow ? belowTop : (hasRoomAbove ? aboveTop : margin);
-            // Horizontal positioning:
-            // - Mobile: keep centered.
-            // - Desktop: try to place next to the clicked button; fall back to centered.
-            let leftPx = Math.round((vw - panelW) / 2);
-            if (!isMobile) {
-                const rightCandidate = anchorRight + 10;
-                const leftCandidate = anchorLeft - 10 - panelW;
-                const canPlaceRight = (rightCandidate + panelW) <= (vw - margin);
-                const canPlaceLeft = leftCandidate >= margin;
-                if (canPlaceRight)
-                    leftPx = rightCandidate;
-                else if (canPlaceLeft)
-                    leftPx = leftCandidate;
-            }
-            return (React.createElement("div", { className: "fixed inset-0 z-[60]" },
-                React.createElement("button", { className: "absolute inset-0 bg-black/70", onClick: closeSwap, "aria-label": "Close" }),
-                React.createElement("div", { className: 
-                    // Always fixed so the computed top is relative to the viewport.
-                    (isMobile
-                        ? 'fixed w-full max-w-md rounded-t-2xl border-t '
-                        : 'fixed w-full max-w-md rounded-2xl border ') +
-                        'glass border-white/10 p-4 pb-6', style: isMobile
-                        ? { top: top + 'px', left: '50%', transform: 'translateX(-50%)' }
-                        : { top: top + 'px', left: leftPx + 'px', transform: 'none' } },
-                    React.createElement("div", { className: "flex items-start justify-between gap-3 mb-3" },
-                        React.createElement("div", null,
-                            React.createElement("div", { className: "font-display text-sm tracking-widest text-gray-300" }, "ALTERNATE EXERCISES"),
-                            React.createElement("div", { className: "text-sm font-semibold mt-1" }, swapState.title),
-                            React.createElement("div", { className: "text-xs text-gray-400 mt-1" }, "Similar stimulus \u2022 Same muscle focus")),
-                        React.createElement("button", { onClick: closeSwap, className: "px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold btn-touch" }, "Close")),
-                    swapState.options.length === 0 ? (React.createElement("div", { className: "p-3 rounded-lg bg-black/40 border border-white/10 text-sm text-gray-300" }, "No close matches found in the database for this exercise.")) : (React.createElement("div", { className: "space-y-2 max-h-[55vh] overflow-y-auto pr-1" }, swapState.options.map((opt) => (React.createElement("button", { key: opt.id, onClick: () => applySwap(opt), className: "w-full text-left p-3 rounded-xl bg-black/40 hover:bg-white/5 border border-white/10 btn-touch" },
-                        React.createElement("div", { className: "flex items-center justify-between gap-2" },
-                            React.createElement("div", { className: "font-semibold text-sm" }, opt.name),
-                            React.createElement("span", { className: "px-2 py-1 rounded bg-white/5 border border-white/10 text-[11px] font-bold text-gray-200" }, String(opt.equipment || '').toUpperCase())),
-                        React.createElement("div", { className: "text-xs text-gray-400 mt-1" },
-                            opt.pattern.replace('_', ' '),
-                            " \u2022 ",
-                            opt.primeMover,
-                            " \u2022 ",
-                            opt.type)))))),
-                    React.createElement("div", { className: "mt-4 text-[11px] text-gray-500" }, "Substitutions preserve movement pattern, prime mover, and exercise type to keep programming evidence-based."))));
-        })(),
-        techModal.open && techModal.technique && (React.createElement("div", { className: "fixed inset-0 z-[70]" },
-            React.createElement("button", { className: "absolute inset-0 bg-black/70", onClick: closeTechnique, "aria-label": "Close technique" }),
-            React.createElement("div", { className: "fixed left-1/2 top-1/2 w-[92%] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl glass border border-white/15 p-4" },
-                React.createElement("div", { className: "flex items-start justify-between gap-3" },
-                    React.createElement("div", null,
-                        React.createElement("div", { className: "text-[11px] tracking-widest text-emerald-300 font-extrabold" }, "TECHNIQUE"),
-                        React.createElement("div", { className: "text-xl font-bold mt-0.5" }, techModal.technique.name)),
-                    React.createElement("button", { onClick: closeTechnique, className: "w-10 h-10 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white/80" }, "\u2715")),
-                React.createElement("div", { className: "text-sm text-gray-200/90 mt-3 leading-relaxed" }, techModal.technique.description),
-                React.createElement("div", { className: "mt-3 p-3 rounded-xl bg-black/40 border border-white/10" },
-                    React.createElement("div", { className: "text-[11px] text-gray-400 font-bold tracking-widest" }, "HOW TO APPLY"),
-                    React.createElement("div", { className: "text-sm text-gray-200 mt-1" }, techModal.technique.howToApply)),
-                React.createElement("div", { className: "mt-3 flex items-center justify-between" },
-                    React.createElement("span", { className: "px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-gray-300" }, String(techModal.technique.level || 'Advanced').toUpperCase()),
-                    React.createElement("button", { onClick: closeTechnique, className: "px-4 py-2 rounded-xl bg-white/10 border border-white/15 hover:bg-white/15 text-sm font-bold" }, "Got it")))))));
-}
-// ==================== HISTORY SCREEN ====================
-function HistoryScreen({ history, onDelete }) {
-    if (history.length === 0) {
-        return (React.createElement("div", { className: "min-h-screen flex items-center justify-center content-with-tabs px-4" },
-            React.createElement("div", { className: "text-center" },
-                React.createElement("div", { className: "w-20 h-20 mx-auto mb-4 rounded-2xl glass flex items-center justify-center" },
-                    React.createElement("span", { className: "text-4xl" }, "\uD83D\uDCDC")),
-                React.createElement("h3", { className: "text-xl font-display font-bold text-gray-400 mb-2" }, "NO HISTORY"),
-                React.createElement("p", { className: "text-gray-500 text-sm" }, "Saved programs appear here"))));
+  }
+  
+  /**
+   * Trigger file picker for unified import
+   * Can be called from any tab
+   * @param {string} sourceTab - Identifies which tab triggered import
+   */
+  function triggerUnifiedImport(sourceTab = 'unknown') {
+    console.log(`📥 TRIGGER: Import requested from ${sourceTab}`);
+    const fileInput = $('fileImportBlock');
+    if (fileInput) {
+      // Store source for logging purposes
+      fileInput.dataset.sourceTab = sourceTab;
+      fileInput.click();
+      console.log(`📥 TRIGGER: File picker opened`);
+    } else {
+      console.error(`📥 TRIGGER: File input #fileImportBlock not found`);
+      alert('⚠️ Import button not properly initialized. Please refresh the page.');
     }
-    return (React.createElement("div", { className: "content-with-tabs px-4 py-6" },
-        React.createElement("h2", { className: "text-2xl font-display font-bold mb-4" }, "HISTORY"),
-        React.createElement("div", { className: "space-y-3" }, history.map((prog, idx) => (React.createElement("div", { key: idx, className: "p-4 rounded-xl glass" },
-            React.createElement("div", { className: "flex justify-between items-start mb-2" },
-                React.createElement("div", null,
-                    React.createElement("h3", { className: "font-bold text-sm" }, prog.config.programType),
-                    React.createElement("p", { className: "text-xs text-gray-400" }, new Date(prog.createdAt).toLocaleDateString())),
-                React.createElement("button", { onClick: () => onDelete(idx), className: "text-red-400 text-xl" }, "\u00D7"))))))));
-}
-// ==================== PROFILE (SETTINGS) SCREEN ====================
-function SettingsScreen({ config, setConfig }) {
-    var _a, _b, _c, _d, _e;
-    const [showProfileLinkInfo, setShowProfileLinkInfo] = React.useState(false);
-    return (React.createElement("div", { className: "content-with-tabs px-4 py-6" },
-        React.createElement("h2", { className: "text-2xl font-display font-bold mb-1" }, "PROFILE"),
-        React.createElement("p", { className: "text-xs text-gray-500 mb-6" }, "Preferences & lifting numbers"),
-        React.createElement("div", { className: "space-y-5" },
-            React.createElement("div", { className: "p-5 rounded-2xl glass" },
-                React.createElement("h3", { className: "font-bold mb-4 text-sm text-gray-400" }, "ONE-REP MAXES"),
-                React.createElement("div", { className: "space-y-3" }, [
-                    { key: 'chest', label: 'Bench Press' },
-                    { key: 'shoulders', label: 'Shoulder Press' },
-                    { key: 'lats', label: 'Pull-up' },
-                    { key: 'quads', label: 'Squat' },
-                    { key: 'hamstrings', label: 'Deadlift' }
-                ].map(({ key, label }) => (React.createElement("div", { key: key, className: "flex justify-between items-center" },
-                    React.createElement("span", { className: "text-sm" },
-                        label,
-                        ":"),
-                    React.createElement("input", { type: "number", value: config.oneRMs[key], placeholder: "0", onChange: (e) => setConfig({ ...config, oneRMs: { ...config.oneRMs, [key]: e.target.value } }), className: "w-20 p-2 rounded bg-black/50 border border-white/10 text-white text-center outline-none focus:border-orange-500" })))))),
-            React.createElement("div", { className: "p-5 rounded-2xl glass" },
-                React.createElement("h3", { className: "font-bold mb-4 text-sm text-gray-400" }, "WARM-UP SETS"),
-                React.createElement("div", { className: "space-y-4" },
-                    React.createElement("div", { className: "flex items-center justify-between gap-3" },
-                        React.createElement("div", null,
-                            React.createElement("div", { className: "text-sm font-semibold" }, "Enable warm-up sets"),
-                            React.createElement("div", { className: "text-xs text-gray-500" }, "Show warm-up ramps before work sets.")),
-                        React.createElement("input", { type: "checkbox", checked: !!((_a = config.warmups) === null || _a === void 0 ? void 0 : _a.enabled), onChange: (e) => setConfig({
-                                ...config,
-                                warmups: { ...(config.warmups || {}), enabled: e.target.checked }
-                            }), className: "w-5 h-5 accent-orange-500" })),
-                    React.createElement("div", { className: "flex items-center justify-between gap-3" },
-                        React.createElement("div", null,
-                            React.createElement("div", { className: "text-sm font-semibold" }, "Warm-up style"),
-                            React.createElement("div", { className: "text-xs text-gray-500" }, "Minimal = fewer sets. Full = complete ramp.")),
-                        React.createElement("select", { value: ((_b = config.warmups) === null || _b === void 0 ? void 0 : _b.mode) || 'full', onChange: (e) => setConfig({
-                                ...config,
-                                warmups: { ...(config.warmups || {}), mode: e.target.value }
-                            }), disabled: !((_c = config.warmups) === null || _c === void 0 ? void 0 : _c.enabled), className: "w-36 p-2 rounded bg-black/50 border border-white/10 text-white text-sm outline-none focus:border-orange-500 disabled:opacity-50" },
-                            React.createElement("option", { value: "minimal" }, "Minimal"),
-                            React.createElement("option", { value: "full" }, "Full"))),
-                    React.createElement("div", { className: "flex items-center justify-between gap-3" },
-                        React.createElement("div", null,
-                            React.createElement("div", { className: "text-sm font-semibold" }, "Compounds only"),
-                            React.createElement("div", { className: "text-xs text-gray-500" }, "If on, isolation exercises won\u2019t show warm-ups.")),
-                        React.createElement("input", { type: "checkbox", checked: !!((_d = config.warmups) === null || _d === void 0 ? void 0 : _d.onlyCompounds), onChange: (e) => setConfig({
-                                ...config,
-                                warmups: { ...(config.warmups || {}), onlyCompounds: e.target.checked }
-                            }), disabled: !((_e = config.warmups) === null || _e === void 0 ? void 0 : _e.enabled), className: "w-5 h-5 accent-orange-500 disabled:opacity-50" })))),
-            React.createElement("div", { className: "p-5 rounded-2xl glass" },
-                React.createElement("div", { className: "flex items-center justify-between mb-2" },
-                    React.createElement("h3", { className: "font-bold text-sm text-gray-400" }, "PROFILE LINK"),
-                    React.createElement("button", { type: "button", "aria-label": "How to use your profile link", onClick: () => setShowProfileLinkInfo(true), className: "p-2 -m-2 rounded-lg text-gray-400 hover:text-white transition btn-touch" },
-                        React.createElement("svg", { className: "w-5 h-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
-                            React.createElement("circle", { cx: "12", cy: "12", r: "10" }),
-                            React.createElement("path", { d: "M12 16v-4" }),
-                            React.createElement("path", { d: "M12 8h.01" })))),
-                React.createElement("p", { className: "text-xs text-gray-500 mb-3" }, "Share this link to keep this profile separate on this device."),
-                React.createElement("div", { className: "flex gap-2" },
-                    React.createElement("input", { readOnly: true, value: (() => {
-                            const pid = ensureProfileId();
-                            const base = window.location.origin + window.location.pathname;
-                            return `${base}#/u/${pid}`;
-                        })(), className: "flex-1 p-2 rounded bg-black/50 border border-white/10 text-white text-xs outline-none" }),
-                    React.createElement("button", { onClick: () => {
-                            var _a;
-                            const pid = ensureProfileId();
-                            const base = window.location.origin + window.location.pathname;
-                            const link = `${base}#/u/${pid}`;
-                            (_a = navigator.clipboard) === null || _a === void 0 ? void 0 : _a.writeText(link);
-                            alert('Profile link copied');
-                        }, className: "px-3 py-2 rounded-lg premium-gradient text-white text-xs font-bold btn-touch" }, "COPY"))),
-            showProfileLinkInfo && (React.createElement("div", { className: "fixed inset-0 z-[999] flex items-center justify-center p-4" },
-                React.createElement("button", { type: "button", "aria-label": "Close", onClick: () => setShowProfileLinkInfo(false), className: "absolute inset-0 bg-black/70" }),
-                React.createElement("div", { className: "relative w-full max-w-lg rounded-2xl glass border border-white/10 shadow-2xl overflow-hidden" },
-                    React.createElement("div", { className: "p-5" },
-                        React.createElement("div", { className: "flex items-start justify-between gap-4" },
-                            React.createElement("div", null,
-                                React.createElement("h3", { className: "text-lg font-display font-bold" }, "How to use your Profile Link"),
-                                React.createElement("p", { className: "text-xs text-gray-400 mt-1" }, "Keep your workouts separate on this device.")),
-                            React.createElement("button", { type: "button", onClick: () => setShowProfileLinkInfo(false), className: "p-2 -m-2 rounded-lg text-gray-400 hover:text-white transition btn-touch", "aria-label": "Close" },
-                                React.createElement("svg", { className: "w-5 h-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
-                                    React.createElement("path", { d: "M18 6 6 18" }),
-                                    React.createElement("path", { d: "M6 6l12 12" })))),
-                        React.createElement("div", { className: "mt-4 text-sm text-gray-200 space-y-3" },
-                            React.createElement("p", { className: "text-gray-300" }, "Your Profile Link keeps your workouts and programs separate from other users on this device."),
-                            React.createElement("div", null,
-                                React.createElement("div", { className: "text-xs font-bold text-gray-400 mb-1" }, "How it works"),
-                                React.createElement("ul", { className: "list-disc pl-5 space-y-1 text-gray-300" },
-                                    React.createElement("li", null, "Always open the app using this exact link to access your data."),
-                                    React.createElement("li", null, "Save or bookmark this link so you don\u2019t lose it."),
-                                    React.createElement("li", null, "Each person should use their own Profile Link."))),
-                            React.createElement("div", null,
-                                React.createElement("div", { className: "text-xs font-bold text-gray-400 mb-1" }, "Sharing a device?"),
-                                React.createElement("ul", { className: "list-disc pl-5 space-y-1 text-gray-300" },
-                                    React.createElement("li", null, "Paste a different Profile Link into the browser to switch users."))),
-                            React.createElement("div", null,
-                                React.createElement("div", { className: "text-xs font-bold text-gray-400 mb-1" }, "Important"),
-                                React.createElement("ul", { className: "list-disc pl-5 space-y-1 text-gray-300" },
-                                    React.createElement("li", null, "Opening the app without a Profile Link creates a new profile."),
-                                    React.createElement("li", null, "Data is stored on this device only (no cloud sync).")))),
-                        React.createElement("div", { className: "mt-5 flex justify-end" },
-                            React.createElement("button", { type: "button", onClick: () => setShowProfileLinkInfo(false), className: "px-4 py-2 rounded-lg premium-gradient text-white text-sm font-bold btn-touch" }, "Got it")))))),
-            React.createElement("button", { onClick: () => { if (confirm('Clear data for this profile only?')) {
-                    storage.clearProfile();
-                    window.location.reload();
-                } }, className: "w-full p-4 rounded-xl bg-red-500/20 text-red-400 font-bold transition btn-touch" }, "CLEAR ALL DATA"))));
-}
-// ==================== TAB BAR ====================
-function TabBar({ tab, setTab, hasProgram }) {
-    const Icon = ({ name, active }) => {
-        const common = "w-5 h-5";
-        const stroke = active ? "currentColor" : "currentColor";
-        if (name === 'home') {
-            return (React.createElement("svg", { className: common, viewBox: "0 0 24 24", fill: "none", stroke: stroke, strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
-                React.createElement("path", { d: "M3 10.5 12 3l9 7.5" }),
-                React.createElement("path", { d: "M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10" })));
-        }
-        if (name === 'workouts') {
-            // Minimal barbell
-            return (React.createElement("svg", { className: common, viewBox: "0 0 24 24", fill: "none", stroke: stroke, strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
-                React.createElement("path", { d: "M6 9v6" }),
-                React.createElement("path", { d: "M8.5 8v8" }),
-                React.createElement("path", { d: "M15.5 8v8" }),
-                React.createElement("path", { d: "M18 9v6" }),
-                React.createElement("path", { d: "M9.5 12h5" }),
-                React.createElement("path", { d: "M3.5 10.5v3" }),
-                React.createElement("path", { d: "M20.5 10.5v3" })));
-        }
-        if (name === 'history') {
-            // Floppy disk
-            return (React.createElement("svg", { className: common, viewBox: "0 0 24 24", fill: "none", stroke: stroke, strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
-                React.createElement("path", { d: "M6 3h12l3 3v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" }),
-                React.createElement("path", { d: "M8 3v6h8V3" }),
-                React.createElement("path", { d: "M9 17h6" })));
-        }
-        if (name === 'profile') {
-            // Person / profile
-            return (React.createElement("svg", { className: common, viewBox: "0 0 24 24", fill: "none", stroke: stroke, strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
-                React.createElement("path", { d: "M20 21a8 8 0 0 0-16 0" }),
-                React.createElement("circle", { cx: "12", cy: "8", r: "4" })));
-        }
-        // settings
-        return (React.createElement("svg", { className: common, viewBox: "0 0 24 24", fill: "none", stroke: stroke, strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
-            React.createElement("path", { d: "M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" }),
-            React.createElement("path", { d: "M19.4 15a7.9 7.9 0 0 0 .1-1l2-1.2-2-3.4-2.3.7a7.7 7.7 0 0 0-1.7-1l-.4-2.4h-4l-.4 2.4a7.7 7.7 0 0 0-1.7 1l-2.3-.7-2 3.4 2 1.2a7.9 7.9 0 0 0 .1 1 7.9 7.9 0 0 0-.1 1l-2 1.2 2 3.4 2.3-.7a7.7 7.7 0 0 0 1.7 1l.4 2.4h4l.4-2.4a7.7 7.7 0 0 0 1.7-1l2.3.7 2-3.4-2-1.2a7.9 7.9 0 0 0-.1-1z" })));
+  }
+  
+  // ========================================
+  // v7.41: UNIFIED FILE INPUT HANDLER
+  // Single handler for ALL CSV imports
+  // ========================================
+  
+  $('fileImportBlock')?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      console.log(`📥 FILE HANDLER: No file selected`);
+      return;
+    }
+    
+    const sourceTab = e.target.dataset.sourceTab || 'unknown';
+    console.log(`📥 FILE HANDLER: File selected from ${sourceTab}:`, file.name, file.size);
+    
+    const reader = new FileReader();
+    
+    reader.onerror = (error) => {
+      console.error(`📥 FILE HANDLER: FileReader error:`, error);
+      alert(`❌ Failed to read file: ${error}`);
     };
-    const tabs = [
-        { id: 'home', label: 'Home', icon: 'home' },
-        { id: 'workouts', label: 'Workouts', icon: 'workouts', disabled: !hasProgram },
-        { id: 'history', label: 'History', icon: 'history' },
-        // Keep the underlying screen as "settings" but present it as a premium "Profile" tab.
-        { id: 'settings', label: 'Profile', icon: 'profile' }
-    ];
-    return (React.createElement("div", { className: "tab-bar px-3 pb-[calc(10px+env(safe-area-inset-bottom))] pt-3" },
-        React.createElement("div", { className: "max-w-2xl mx-auto rounded-2xl glass border border-white/10" },
-            React.createElement("div", { className: "px-2 py-2 flex justify-around" }, tabs.map(t => {
-                const active = tab === t.id;
-                return (React.createElement("button", { key: t.id, onClick: () => !t.disabled && setTab(t.id), disabled: t.disabled, className: "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition btn-touch " +
-                        (active
-                            ? "text-orange-400"
-                            : t.disabled
-                                ? "text-gray-800"
-                                : "text-gray-500 hover:text-gray-300") },
-                    React.createElement("div", { className: "w-9 h-9 rounded-xl flex items-center justify-center " + (active ? "bg-white/5 ring-premium" : ""), "aria-hidden": "true" },
-                        React.createElement(Icon, { name: t.icon, active: active })),
-                    React.createElement("span", { className: "text-[10px] font-bold tracking-wider" }, t.label.toUpperCase())));
-            })))));
+    
+    reader.onload = (event) => {
+      const csvText = event.target.result;
+      console.log(`📥 FILE HANDLER: File read successfully, length: ${csvText.length}`);
+      console.log(`📥 FILE HANDLER: First 200 chars:`, csvText.substring(0, 200));
+      
+      // Call unified import handler
+      unifiedBlockImport(csvText, sourceTab);
+      
+      // Reset file input so same file can be selected again
+      e.target.value = '';
+      delete e.target.dataset.sourceTab;
+    };
+    
+    reader.readAsText(file);
+  });
+  
+  $('btnLogReadiness')?.addEventListener('click', () => {
+    const o = $('readinessOverlay');
+    if (o) o.classList.add('show');
+  });
+  $('btnPrevWeek')?.addEventListener('click', () => {
+    if (!state.currentBlock) return;
+    ui.weekIndex = clamp(ui.weekIndex - 1, 0, state.currentBlock.weeks.length - 1);
+    renderWorkout();
+  });
+  $('btnNextWeek')?.addEventListener('click', () => {
+    if (!state.currentBlock) return;
+    ui.weekIndex = clamp(ui.weekIndex + 1, 0, state.currentBlock.weeks.length - 1);
+    renderWorkout();
+  });
+  
+  // v7.32: CSV Import functionality
+// Supports format: Date,Exercise,Sets,Reps,Weight,RPE (or similar variations)
+function importCSV(csvText) {
+  try {
+    const lines = csvText.trim().split('\n').filter(line => line.trim());
+    if (lines.length < 2) {
+      return { success: false, error: 'CSV file is empty or has no data rows' };
+    }
+    
+    // Parse header
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const dateIdx = headers.findIndex(h => h.includes('date'));
+    const exerciseIdx = headers.findIndex(h => h.includes('exercise') || h.includes('lift') || h.includes('movement'));
+    const setsIdx = headers.findIndex(h => h.includes('set'));
+    const repsIdx = headers.findIndex(h => h.includes('rep'));
+    const weightIdx = headers.findIndex(h => h.includes('weight') || h.includes('load') || h.includes('kg') || h.includes('lb'));
+    const rpeIdx = headers.findIndex(h => h.includes('rpe') || h.includes('rir') || h.includes('effort'));
+    
+    if (dateIdx === -1 || exerciseIdx === -1) {
+      return { success: false, error: 'CSV must have Date and Exercise columns' };
+    }
+    
+    // Parse data rows
+    const workouts = {};
+    const exerciseMaxes = {}; // Track best lifts for max estimation
+    let totalExercises = 0;
+    
+    for (let i = 1; i < lines.length; i++) {
+      const cells = lines[i].split(',').map(c => c.trim());
+      if (cells.length < 2) continue;
+      
+      const date = cells[dateIdx];
+      const exercise = cells[exerciseIdx];
+      const sets = setsIdx >= 0 ? parseInt(cells[setsIdx]) || 1 : 1;
+      const reps = repsIdx >= 0 ? parseInt(cells[repsIdx]) || 1 : 1;
+      const weight = weightIdx >= 0 ? parseFloat(cells[weightIdx]) || 0 : 0;
+      const rpe = rpeIdx >= 0 ? parseFloat(cells[rpeIdx]) || 0 : 0;
+      
+      if (!date || !exercise) continue;
+      
+      // Group by date
+      if (!workouts[date]) workouts[date] = [];
+      workouts[date].push({ exercise, sets, reps, weight, rpe });
+      totalExercises++;
+      
+      // Track maxes for estimation (only for main lifts with weight)
+      if (weight > 0 && reps > 0 && reps <= 10) {
+        const exerciseLower = exercise.toLowerCase();
+        const isMainLift = exerciseLower.includes('snatch') || 
+                          exerciseLower.includes('clean') || 
+                          exerciseLower.includes('jerk') ||
+                          exerciseLower.includes('squat') ||
+                          exerciseLower.includes('press');
+        
+        if (isMainLift) {
+          // Estimate 1RM using Epley formula: weight × (1 + reps/30)
+          const estimated1RM = weight * (1 + reps / 30);
+          
+          if (!exerciseMaxes[exercise] || estimated1RM > exerciseMaxes[exercise].estimated1RM) {
+            exerciseMaxes[exercise] = {
+              weight,
+              reps,
+              rpe,
+              estimated1RM: Math.round(estimated1RM)
+            };
+          }
+        }
+      }
+    }
+    
+    if (Object.keys(workouts).length === 0) {
+      return { success: false, error: 'No valid workout data found in CSV' };
+    }
+    
+    // Add to history (create simple workout log format)
+    state.history = state.history || [];
+    Object.keys(workouts).forEach(date => {
+      const existingIdx = state.history.findIndex(h => h.date === date);
+      if (existingIdx >= 0) {
+        // Merge with existing workout
+        state.history[existingIdx].exercises = [
+          ...state.history[existingIdx].exercises,
+          ...workouts[date]
+        ];
+      } else {
+        // Create new workout entry
+        state.history.push({
+          date,
+          exercises: workouts[date],
+          source: 'csv_import'
+        });
+      }
+    });
+    
+    // Update user maxes if we found better estimates
+    const profile = getProfile();
+    let maxesUpdated = false;
+    
+    Object.keys(exerciseMaxes).forEach(exercise => {
+      const exerciseLower = exercise.toLowerCase();
+      const max = exerciseMaxes[exercise];
+      
+      // Map to standard lift keys
+      if (exerciseLower.includes('snatch') && !exerciseLower.includes('power')) {
+        if (!profile.maxes.snatch || max.estimated1RM > profile.maxes.snatch) {
+          profile.maxes.snatch = max.estimated1RM;
+          maxesUpdated = true;
+        }
+      }
+      else if (exerciseLower.includes('clean') && (exerciseLower.includes('jerk') || exerciseLower.includes('c&j'))) {
+        if (!profile.maxes.cj || max.estimated1RM > profile.maxes.cj) {
+          profile.maxes.cj = max.estimated1RM;
+          maxesUpdated = true;
+        }
+      }
+      else if (exerciseLower.includes('back squat') || (exerciseLower.includes('squat') && exerciseLower.includes('back'))) {
+        if (!profile.maxes.bs || max.estimated1RM > profile.maxes.bs) {
+          profile.maxes.bs = max.estimated1RM;
+          maxesUpdated = true;
+        }
+      }
+      else if (exerciseLower.includes('front squat') || (exerciseLower.includes('squat') && exerciseLower.includes('front'))) {
+        if (!profile.maxes.fs || max.estimated1RM > profile.maxes.fs) {
+          profile.maxes.fs = max.estimated1RM;
+          maxesUpdated = true;
+        }
+      }
+    });
+    
+    return {
+      success: true,
+      workouts: Object.keys(workouts).length,
+      exercises: totalExercises,
+      maxesUpdated
+    };
+    
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 }
-ensureProfileId();
-ReactDOM.render(React.createElement(TrainIQ, null), document.getElementById('root'));
+
+// v7.24: Import button handler
+  $('btnImport')?.addEventListener('click', () => {
+    const fileInput = $('fileImport');
+    if (fileInput) fileInput.click();
+  });
+  
+  // v7.41: Old workout log CSV import removed
+  // History tab now uses unified training block import via btnImportBlock_History
+  
+  // v7.24: File import handler (JSON)
+  $('fileImport')?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importData = JSON.parse(event.target.result);
+        
+        if (!importData.version) {
+          alert('Invalid file format. Please select a valid LiftAI backup file.');
+          return;
+        }
+        
+        if (!confirm(`Import data from ${importData.exportDate || 'backup'}?\n\nThis will MERGE with your current data (not replace).`)) {
+          return;
+        }
+        
+        // Merge imported data
+        if (importData.blockHistory) {
+          state.blockHistory = state.blockHistory || [];
+          importData.blockHistory.forEach(block => {
+            if (!state.blockHistory.find(b => b.id === block.id)) {
+              state.blockHistory.push(block);
+            }
+          });
+        }
+        
+        if (importData.profiles) {
+          Object.keys(importData.profiles).forEach(profileName => {
+            if (!state.profiles[profileName]) {
+              state.profiles[profileName] = importData.profiles[profileName];
+            }
+          });
+        }
+        
+        if (importData.history) {
+          state.history = state.history || [];
+          state.history.push(...importData.history);
+        }
+        
+        if (importData.currentBlock && confirm('Also import the active training block from this backup?')) {
+          state.currentBlock = importData.currentBlock;
+        }
+        
+        saveState();
+        renderHistory();
+        renderSettings();
+        notify('✅ Data imported successfully!');
+      } catch (err) {
+        console.error('Import error:', err);
+        alert('Failed to import file. Please check the file format.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+  
+  $('settingsProfileSelect')?.addEventListener('change', (e) => {
+    setActiveProfile(e.target.value);
+    renderSettings();
+  });
+  $('btnNewProfile')?.addEventListener('click', () => {
+    const row = $('newProfileRow');
+    if (row) row.style.display = (row.style.display === 'none' || !row.style.display) ? 'flex' : 'none';
+  });
+  $('btnCreateProfile')?.addEventListener('click', () => {
+    const name = ($('newProfileName')?.value || '').trim();
+    if (!name) return;
+    if (state.profiles[name]) {
+      alert('Profile exists.');
+      return;
+    }
+    const base = DEFAULT_PROFILE();
+    base.name = name;
+    state.profiles[name] = base;
+    state.activeProfile = name;
+    saveState();
+    $('newProfileName').value = '';
+    $('newProfileRow').style.display = 'none';
+    renderSettings();
+  });
+  $('btnSaveSettings')?.addEventListener('click', () => {
+    const p = getProfile();
+    p.units = $('settingsUnits')?.value || p.units || 'kg';
+    p.includeBlocks = !!$('settingsIncludeBlocks')?.checked;
+    p.volumePref = $('settingsVolumePref')?.value || p.volumePref || 'reduced';
+    p.autoCut = !!$('settingsAutoCut')?.checked;
+    p.aiEnabled = !!$('settingsAIEnabled')?.checked;
+    p.aiModel = $('settingsAIModel')?.value || '';
+    const sn = Number($('settingsSnatch')?.value);
+    const cj = Number($('settingsCJ')?.value);
+    const fs = Number($('settingsFS')?.value);
+    const bs = Number($('settingsBS')?.value);
+    if ([sn, cj, fs, bs].some(v => !Number.isFinite(v) || v <= 0)) {
+      alert('Enter all 1RMs.');
+      return;
+    }
+    p.maxes = { snatch: sn, cj, fs, bs };
+    p.workingMaxes = computeWorkingMaxes(p.maxes);
+    if (state.currentBlock && state.currentBlock.profileName === state.activeProfile) {
+      const len = state.currentBlock.blockLength;
+      const weeks = [];
+      for (let w = 0; w < len; w++) weeks.push(makeWeekPlan(p, w));
+      state.currentBlock.weeks = weeks;
+      ui.weekIndex = clamp(ui.weekIndex, 0, weeks.length - 1);
+    }
+    saveState();
+    notify('Settings saved');
+    renderDashboard();
+    renderWorkout();
+    renderSettings();
+  });
+  $('btnResetAll')?.addEventListener('click', () => {
+    if (!confirm('Reset all data?')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    state = DEFAULT_STATE();
+    ui.weekIndex = 0;
+    saveState();
+    showPage('Setup');
+    ensureDaySelectorsBound();
+  });
+  $('btnTestAI')?.addEventListener('click', () => {
+    const status = $('aiTestStatus');
+    if (status) status.textContent = 'AI test disabled';
+    notify('AI test disabled');
+  });
+  $('btnExecExit')?.addEventListener('click', () => {
+    $('execOverlay')?.classList.remove('show');
+  });
+  $('btnExecPrev')?.addEventListener('click', () => notify('Exec mode not used'));
+  $('btnExecNext')?.addEventListener('click', () => notify('Exec mode not used'));
+  $('btnCutRemaining')?.addEventListener('click', () => notify('Exec mode not used'));
+  $('btnExecComplete')?.addEventListener('click', () => {
+    $('execOverlay')?.classList.remove('show');
+    notify('Exec complete');
+  });
+  $('btnExecOpenTable')?.addEventListener('click', () => notify('Exec mode not used'));
+}
+
+function boot() {
+  // v7.45: Initialize Supabase for cloud sync
+  initializeSupabase();
+  
+  wireButtons();
+  bindWorkoutDetailControls();
+  bindReadinessModal();
+  ensureDaySelectorsBound();
+  showPage('Setup');
+  if (state.currentBlock && state.currentBlock.weeks?.length) {
+    ui.weekIndex = 0;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', boot);
